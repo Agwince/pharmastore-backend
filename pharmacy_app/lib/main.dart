@@ -43,7 +43,7 @@ class ResponsiveWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
+        constraints: const BoxConstraints(maxWidth: double.infinity),
         child: child,
       ),
     );
@@ -137,7 +137,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchBanners() async {
     try {
-      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/banners'));
+      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/banners/'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
         setState(() {
@@ -152,7 +152,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchMedicines() async {
     try {
-      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/medicines'));
+      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/medicines/'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
         setState(() {
@@ -168,7 +168,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchOrders() async {
     try {
-      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/orders'));
+      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/orders/'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
         setState(() => orders = (decodedData is List) ? decodedData : decodedData['results'] ?? []);
@@ -424,7 +424,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     try {
       final itemsToProcess = isPos ? posCart : cart;
       final response = await http.post(
-        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/checkout'),
+        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/checkout/'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'items': itemsToProcess, 'payment_method': paymentMethod}), 
       );
@@ -578,7 +578,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       width: double.infinity,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
+          constraints: const BoxConstraints(maxWidth: double.infinity),
           child: Column(
             children: [
               // Top Pink Promo Bar
@@ -708,7 +708,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       toolbarHeight: 80,
       title: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
+          constraints: const BoxConstraints(maxWidth: double.infinity),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -755,7 +755,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         preferredSize: const Size.fromHeight(70.0),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200), 
+            constraints: const BoxConstraints(maxWidth: double.infinity), 
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
               child: TextField(
@@ -772,7 +772,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   Widget _buildBottomNav() {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
+        constraints: const BoxConstraints(maxWidth: double.infinity),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed, // Keeps all icons visible
           selectedItemColor: Colors.green, 
@@ -1031,7 +1031,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             return Center(
                               child: SizedBox(
                                 height: Curves.easeOut.transform(value) * (isDesktop ? 350 : 220), 
-                                width: Curves.easeOut.transform(value) * (isDesktop ? 1200 : 800), 
+                                width: Curves.easeOut.transform(value) * MediaQuery.of(context).size.width, 
                                 child: child
                               ),
                             );
@@ -1286,7 +1286,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                           top: 8, right: 8, 
                           child: GestureDetector(
                             onTap: () => _toggleWishlist(med), 
-                            child: Container(
+                          child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)),
                               child: Icon(
@@ -1909,7 +1909,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     
     try {
       final response = await http.post(
-        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/register'),
+        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/register/'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'pharmacy_name': _nameController.text,
@@ -2048,7 +2048,7 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
 
     try {
       // Because we are sending an Image AND Text, we use a MultipartRequest
-      var request = http.MultipartRequest('POST', Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/prescriptions/upload'));
+      var request = http.MultipartRequest('POST', Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/prescriptions/upload/'));
       
       // Attach the text data
       request.fields['patient_name'] = _nameController.text;
