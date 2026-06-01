@@ -150,6 +150,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     }
   }
 
+  // --- THE FIX IS HERE ---
   Future<void> fetchMedicines() async {
     try {
       final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/medicines/'));
@@ -159,6 +160,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           medicines = (decodedData is List) ? decodedData : decodedData['results'] ?? [];
           _applyFilters(); 
           isLoading = false;
+        });
+      } else {
+        // Stop spinning and show the real server error!
+        setState(() { 
+          errorMessage = 'Server returned error code: ${response.statusCode}'; 
+          isLoading = false; 
         });
       }
     } catch (e) {
