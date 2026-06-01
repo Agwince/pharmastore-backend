@@ -96282,7 +96282,7 @@ s.z=!1},
 $S:0}
 B.ayI.prototype={
 $0(){var s=this.a
-s.Q="Server waking up. Please refresh. (Status: "+this.b.b+")"
+s.Q="Server is waking up. Please wait 30 seconds and refresh. (Status: "+this.b.b+")"
 s.z=!1},
 $S:0}
 B.ayJ.prototype={
