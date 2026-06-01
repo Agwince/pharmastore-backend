@@ -43,7 +43,7 @@ class ResponsiveWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: double.infinity),
+        constraints: const BoxConstraints(maxWidth: 1200), // FIXED: Restored constraint
         child: child,
       ),
     );
@@ -69,7 +69,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   List<Map<String, dynamic>> posCart = []; 
   
   List<dynamic> promoBanners = [];
-  List<dynamic> wishlist = []; // Stores saved items
+  List<dynamic> wishlist = [];
 
   bool isLoading = true;
   String errorMessage = '';
@@ -81,13 +81,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _posSearchController = TextEditingController();
   
-  // Tracking Variables
   final TextEditingController _trackController = TextEditingController();
   Map<String, dynamic>? _trackedOrder;
   String _trackError = '';
 
   final PageController _bannerController = PageController(viewportFraction: 0.9);
-  final ScrollController _mainScrollController = ScrollController(); // Controls scrolling
+  final ScrollController _mainScrollController = ScrollController(); 
   Timer? _bannerTimer;
   int _currentBannerIndex = 0;
 
@@ -160,6 +159,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           _applyFilters(); 
           isLoading = false;
         });
+      } else {
+        // FIXED: Catch non-200 responses to prevent the infinite loading trap
+        setState(() { 
+          errorMessage = 'Server waking up. Please refresh. (Status: ${response.statusCode})'; 
+          isLoading = false; 
+        });
       }
     } catch (e) {
       setState(() { errorMessage = 'Failed to connect to database.'; isLoading = false; });
@@ -216,7 +221,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Adds or removes items from the wishlist
   void _toggleWishlist(dynamic med) {
     setState(() {
       if (wishlist.any((item) => item['id'] == med['id'])) {
@@ -298,9 +302,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // LOGISTICS: Update Order Status
-  // ==========================================
   Future<void> _updateOrderStatus(int orderId, String newStatus) async {
     try {
       final response = await http.patch(
@@ -401,24 +402,20 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Intercepts M-Pesa to show the simulator
   Future<void> _processCheckout({bool isPos = false, String paymentMethod = 'Cash'}) async {
     if (paymentMethod == 'M-Pesa') {
-      // Show the beautiful simulator, then run the API call!
       showDialog(
         context: context,
-        barrierDismissible: false, // Prevents user from clicking outside to cancel
+        barrierDismissible: false, 
         builder: (context) => MpesaSimulationDialog(
           onComplete: () => _finalizeCheckoutAPI(isPos: isPos, paymentMethod: paymentMethod),
         )
       );
     } else {
-      // Normal flow for Cash, Credit, or Pay on Delivery
       _finalizeCheckoutAPI(isPos: isPos, paymentMethod: paymentMethod);
     }
   }
 
-  // The actual Django API engine
   Future<void> _finalizeCheckoutAPI({required bool isPos, required String paymentMethod}) async {
     setState(() => isLoading = true);
     try {
@@ -467,9 +464,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save(), name: 'PharmaStore_Receipt_${order['id']}');
   }
 
-  // Admin PDF Business Report Generator
   Future<void> _generateAdminReport() async {
-    // 1. Calculate the live stats
     double totalRev = 0, pendingRev = 0, cash = 0, mpesa = 0, credit = 0;
     int delivered = 0;
     for (var o in orders) {
@@ -482,7 +477,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       if (o['payment_method'] == 'Credit') credit += price;
     }
 
-    // 2. Draw the PDF Document
     final pdf = pw.Document();
     pdf.addPage(
       pw.MultiPage(
@@ -522,7 +516,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       )
     );
 
-    // 3. Trigger the device's print/save dialog
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(), 
       name: 'PharmaStore_Report_${DateTime.now().millisecondsSinceEpoch}'
@@ -531,7 +524,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Detect screen width to switch between Mobile and Web layouts
     bool isDesktop = MediaQuery.of(context).size.width > 850;
 
     Widget currentBody;
@@ -546,11 +538,9 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     }
 
     return Scaffold(
-      // On Web, the AppBar is hidden. On Mobile, it shows the compact Mobile AppBar.
       appBar: isDesktop ? null : _buildMobileAppBar(),
       body: Column(
         children: [
-          // On Web, draw custom Desktop Header at the top of the body
           if (isDesktop) _buildDesktopHeader(), 
           
           Expanded(
@@ -564,29 +554,23 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
         ],
       ), 
-      // Bottom Navigation ONLY shows on Mobile
       bottomNavigationBar: isDesktop ? null : _buildBottomNav(), 
     );
   }
 
-  // ==========================================
-  // Desktop-Specific Web Header
-  // ==========================================
   Widget _buildDesktopHeader() {
     return Container(
       color: Colors.white,
       width: double.infinity,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: double.infinity),
+          constraints: const BoxConstraints(maxWidth: 1200), // FIXED: Restored constraint to avoid infinite stretch
           child: Column(
             children: [
-              // Top Pink Promo Bar
               Container(
                 width: double.infinity, color: const Color(0xFFE91E63), padding: const EdgeInsets.symmetric(vertical: 6),
                 child: const Text("Free Delivery for orders above KES 2,000 | T&Cs Apply", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
-              // Main Header Row (Logo, Delivery, Icons)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
@@ -604,7 +588,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     ),
                     Row(
                       children: [
-                        // Fake Delivery Badge
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
@@ -619,7 +602,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                                 setState(() => isLoggedIn = true); fetchOrders();
                               });
                             } else {
-                              setState(() => _currentScreen = 'dashboard'); // Admin access
+                              setState(() => _currentScreen = 'dashboard'); 
                             }
                           }
                         ),
@@ -636,19 +619,16 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 )
               ),
               const Divider(height: 1),
-              // Navigation Links & Action Buttons
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Horizontal Web Links
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
                             if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
-                            // Scrolls down past the banner to the Categories section
                             Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(450, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut));
                           }, 
                           child: const Text("Shop by Category", style: TextStyle(color: Colors.black87, fontSize: 15))
@@ -657,7 +637,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                         TextButton(
                           onPressed: () {
                             if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
-                            // Scrolls down to the All Products section
                             Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(900, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut));
                           }, 
                           child: const Text("All Products", style: TextStyle(color: Colors.black87, fontSize: 15))
@@ -677,7 +656,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                         ),
                       ]
                     ),
-                    // Action Buttons
                     Row(
                       children: [
                         ElevatedButton(
@@ -708,7 +686,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       toolbarHeight: 80,
       title: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: double.infinity),
+          constraints: const BoxConstraints(maxWidth: 1200), // FIXED: Restored constraint
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -755,7 +733,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         preferredSize: const Size.fromHeight(70.0),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: double.infinity), 
+            constraints: const BoxConstraints(maxWidth: 1200), // FIXED: Restored constraint
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
               child: TextField(
@@ -772,9 +750,9 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   Widget _buildBottomNav() {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: double.infinity),
+        constraints: const BoxConstraints(maxWidth: 1200), // FIXED: Restored constraint
         child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed, // Keeps all icons visible
+          type: BottomNavigationBarType.fixed, 
           selectedItemColor: Colors.green, 
           unselectedItemColor: Colors.grey,
           currentIndex: 0, 
@@ -789,7 +767,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             if (index == 1) setState(() => _currentScreen = 'wishlist');
             if (index == 2) setState(() => _currentScreen = 'cart');
             if (index == 3) {
-              // If Admin, open dashboard. If Customer, open Tracker!
               setState(() => _currentScreen = isLoggedIn ? 'dashboard' : 'track'); 
             }
           },
@@ -798,9 +775,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // The Wishlist Screen
-  // ==========================================
   Widget _buildWishlistBody() {
     if (wishlist.isEmpty) {
       return const Center(child: Text('Your wishlist is empty!', style: TextStyle(fontSize: 18, color: Colors.grey)));
@@ -837,9 +811,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // Live Order Tracking Screen
-  // ==========================================
   Widget _buildTrackingBody() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -850,7 +821,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           const Text('Enter your Order ID to see live logistics updates.', style: TextStyle(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 32),
           
-          // The Search Bar
           Container(
             constraints: const BoxConstraints(maxWidth: 500),
             padding: const EdgeInsets.all(8),
@@ -885,7 +855,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           
           if (_trackError.isNotEmpty) ...[const SizedBox(height: 24), Text(_trackError, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))],
 
-          // The Live Visual Timeline!
           if (_trackedOrder != null) ...[
             const SizedBox(height: 48),
             Container(
@@ -904,7 +873,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   ),
                   const Divider(height: 32),
                   
-                  // The Logic to calculate the current step
                   Builder(
                     builder: (context) {
                       String status = _trackedOrder!['status'] ?? 'Processed';
@@ -924,7 +892,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             ],
                           ),
                           const SizedBox(height: 32),
-                          // Dynamic Status Message
                           Container(
                             width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
                             child: Row(
@@ -953,7 +920,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Helper widget for the animated circles
   Widget _buildTrackingNode(IconData icon, String label, bool isActive, Color activeColor) {
     return Column(
       children: [
@@ -964,7 +930,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Helper widget for the connecting lines
   Widget _buildTrackingLine(bool isActive) {
     return Expanded(child: AnimatedContainer(duration: const Duration(milliseconds: 500), height: 4, margin: const EdgeInsets.only(bottom: 24), color: isActive ? Colors.green : Colors.grey[300]));
   }
@@ -987,12 +952,11 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       );
     }
     
-    if (errorMessage.isNotEmpty) return Center(child: Text(errorMessage, style: const TextStyle(color: Colors.red)));
+    if (errorMessage.isNotEmpty) return SliverToBoxAdapter(child: Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 18)))));
 
     return CustomScrollView(
       controller: _mainScrollController,
       slivers: [
-        // Dynamic Banners with Floating Search Card (Web)
         SliverToBoxAdapter(
           child: Stack(
             clipBehavior: Clip.none, 
@@ -1056,7 +1020,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     ),
               ),
               
-              // Floating Search Box ONLY for Desktop Web
               if (isDesktop)
                 Positioned(
                   bottom: -40, 
@@ -1113,10 +1076,8 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
         ),
         
-        // Adds a spacer to make room for the floating box on web
         if (isDesktop) const SliverToBoxAdapter(child: SizedBox(height: 60)),
         
-        // Hide the Mobile Action Buttons if on Desktop (since they are in the header now)
         if (!isDesktop) 
           SliverToBoxAdapter(
             child: Padding(
@@ -1466,7 +1427,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     
     return Column(
       children: [
-        // Dashboard Header with PDF Download Button
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -2047,27 +2007,22 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Because we are sending an Image AND Text, we use a MultipartRequest
       var request = http.MultipartRequest('POST', Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/prescriptions/upload/'));
       
-      // Attach the text data
       request.fields['patient_name'] = _nameController.text;
       request.fields['phone_number'] = _phoneController.text;
       request.fields['delivery_address'] = _addressController.text;
 
-      // Attach the image file safely for both Web and Mobile
       var imageBytes = await _selectedImage!.readAsBytes();
       var multipartFile = http.MultipartFile.fromBytes('prescription_image', imageBytes, filename: _selectedImage!.name);
       request.files.add(multipartFile);
 
-      // Send to Django
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
       setState(() => _isLoading = false);
 
       if (response.statusCode == 201) {
-        // Success! Go back to the shop
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prescription securely sent to our Pharmacists!'), backgroundColor: Colors.green));
           Navigator.pop(context); 
@@ -2141,7 +2096,6 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
                   const Text('2. Attach Doctor\'s Note', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
                   const SizedBox(height: 16),
                   
-                  // Image Picker Box
                   GestureDetector(
                     onTap: _pickImage,
                     child: Container(
@@ -2208,21 +2162,18 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
   }
 
   Future<void> _runSimulation() async {
-    // Step 1: Connecting
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) setState(() {
       statusMessage = "Sending STK Push to your phone...";
       currentIcon = Icons.smartphone;
     });
 
-    // Step 2: Waiting for User PIN
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) setState(() {
       statusMessage = "Please enter your M-PESA PIN...";
       currentIcon = Icons.dialpad;
     });
 
-    // Step 3: Payment Confirmed!
     await Future.delayed(const Duration(milliseconds: 3500));
     if (mounted) setState(() {
       statusMessage = "Payment Received Successfully!";
@@ -2230,7 +2181,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
       isProcessing = false;
     });
 
-    // Step 4: Close the dialog and trigger the Django API
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) {
       Navigator.pop(context); 
@@ -2250,7 +2200,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Bouncing/Changing M-Pesa Icon
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
@@ -2265,11 +2214,9 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
             const Text('M-PESA Express', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50))),
             const SizedBox(height: 24),
             
-            // Loading Spinner (Hides when done)
             if (isProcessing) const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50))),
             if (isProcessing) const SizedBox(height: 24),
             
-            // Dynamic Status Text
             Text(statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
           ],
         ),
