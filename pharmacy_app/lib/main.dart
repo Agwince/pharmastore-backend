@@ -152,7 +152,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchMedicines() async {
     try {
-      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com:8000/api/medicines'));
+      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/medicines'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
         setState(() {
@@ -168,7 +168,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchOrders() async {
     try {
-      final response = await http.get(Uri.parse('http://127.0.0.1:8000/api/orders'));
+      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/orders'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
         setState(() => orders = (decodedData is List) ? decodedData : decodedData['results'] ?? []);
@@ -246,7 +246,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   void _showProductDetails(dynamic med, {bool isPos = false, required String heroTag}) {
     int selectedQuantity = 1;
-    String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'http://127.0.0.1:8000${med['image']}') : null;
+    String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'https://pharmastore-backend-jmcl.onrender.com${med['image']}') : null;
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
@@ -304,7 +304,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   Future<void> _updateOrderStatus(int orderId, String newStatus) async {
     try {
       final response = await http.patch(
-        Uri.parse('http://127.0.0.1:8000/api/orders/$orderId/'),
+        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/orders/$orderId/'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'status': newStatus}),
       );
@@ -424,7 +424,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     try {
       final itemsToProcess = isPos ? posCart : cart;
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/checkout'),
+        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/checkout'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'items': itemsToProcess, 'payment_method': paymentMethod}), 
       );
@@ -811,7 +811,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       itemCount: wishlist.length,
       itemBuilder: (context, index) {
         final med = wishlist[index];
-        String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'http://127.0.0.1:8000${med['image']}') : null;
+        String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'https://pharmastore-backend-jmcl.onrender.com${med['image']}') : null;
 
         return Container(
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.pink[100]!)),
@@ -1018,7 +1018,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                         final color1 = Color(parseColor(banner['color1'], 0xFF003876));
                         final color2 = Color(parseColor(banner['color2'], 0xFF0056b3));
                         
-                        String? bannerImageUrl = banner['image'] != null ? (banner['image'].toString().startsWith('http') ? banner['image'] : 'http://127.0.0.1:8000${banner['image']}') : null;
+                        String? bannerImageUrl = banner['image'] != null ? (banner['image'].toString().startsWith('http') ? banner['image'] : 'https://pharmastore-backend-jmcl.onrender.com${banner['image']}') : null;
 
                         return AnimatedBuilder(
                           animation: _bannerController,
@@ -1190,7 +1190,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(24), itemCount: filteredMedicines.length > 5 ? 5 : filteredMedicines.length,
               itemBuilder: (context, index) {
                 final med = filteredMedicines[index];
-                String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'http://127.0.0.1:8000${med['image']}') : null;
+                String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'https://pharmastore-backend-jmcl.onrender.com${med['image']}') : null;
 
                 return GestureDetector(
                   onTap: () => _showProductDetails(med, heroTag: 'med_image_${med['id']}'), 
@@ -1260,7 +1260,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final med = filteredMedicines[index];
-                String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'http://127.0.0.1:8000${med['image']}') : null;
+                String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'https://pharmastore-backend-jmcl.onrender.com${med['image']}') : null;
 
                 return GestureDetector(
                   onTap: () => _showProductDetails(med, heroTag: 'med_image_all_${med['id']}'), 
@@ -1802,7 +1802,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/login/'), 
+        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/login/'), 
         body: {'username': _phoneController.text, 'password': _passwordController.text}
       );
       setState(() => _isLoading = false);
@@ -1909,7 +1909,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/api/register'),
+        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'pharmacy_name': _nameController.text,
@@ -2048,7 +2048,7 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
 
     try {
       // Because we are sending an Image AND Text, we use a MultipartRequest
-      var request = http.MultipartRequest('POST', Uri.parse('http://127.0.0.1:8000/api/prescriptions/upload'));
+      var request = http.MultipartRequest('POST', Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/prescriptions/upload'));
       
       // Attach the text data
       request.fields['patient_name'] = _nameController.text;
