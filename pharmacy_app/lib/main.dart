@@ -137,7 +137,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchBanners() async {
     try {
-      final response = await http.get(Uri.parse('http://127.0.0.1:8000/api/banners'));
+      final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/banners'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
         setState(() {
