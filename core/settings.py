@@ -121,8 +121,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # --- API CONFIGURATION ---
-# This tells Django to allow any website or mobile app to request data from your API
-CORS_ALLOW_ALL_ORIGINS = True
+# This explicitly allows your deployed frontend to communicate with your backend
+CORS_ALLOWED_ORIGINS = [
+    "https://pharmastore-web.onrender.com",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+]
 
 # Media files (Images you upload)
 MEDIA_URL = '/media/'
