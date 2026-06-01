@@ -43,7 +43,7 @@ class ResponsiveWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: double.infinity),
+        constraints: const BoxConstraints(maxWidth: 1200),
         child: child,
       ),
     );
@@ -150,7 +150,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     }
   }
 
-  // --- THE FIX IS HERE ---
   Future<void> fetchMedicines() async {
     try {
       final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/medicines/'));
@@ -160,12 +159,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           medicines = (decodedData is List) ? decodedData : decodedData['results'] ?? [];
           _applyFilters(); 
           isLoading = false;
-        });
-      } else {
-        // Stop spinning and show the real server error!
-        setState(() { 
-          errorMessage = 'Server returned error code: ${response.statusCode}'; 
-          isLoading = false; 
         });
       }
     } catch (e) {
@@ -585,7 +578,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       width: double.infinity,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: double.infinity),
+          constraints: const BoxConstraints(maxWidth: 1200),
           child: Column(
             children: [
               // Top Pink Promo Bar
@@ -715,7 +708,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       toolbarHeight: 80,
       title: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: double.infinity),
+          constraints: const BoxConstraints(maxWidth: 1200),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -762,7 +755,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         preferredSize: const Size.fromHeight(70.0),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: double.infinity), 
+            constraints: const BoxConstraints(maxWidth: 1200), 
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
               child: TextField(
@@ -779,7 +772,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   Widget _buildBottomNav() {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: double.infinity),
+        constraints: const BoxConstraints(maxWidth: 1200),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed, // Keeps all icons visible
           selectedItemColor: Colors.green, 
@@ -1038,7 +1031,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             return Center(
                               child: SizedBox(
                                 height: Curves.easeOut.transform(value) * (isDesktop ? 350 : 220), 
-                                width: Curves.easeOut.transform(value) * MediaQuery.of(context).size.width, 
+                                width: Curves.easeOut.transform(value) * (isDesktop ? 1200 : 800), 
                                 child: child
                               ),
                             );
@@ -1293,7 +1286,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                           top: 8, right: 8, 
                           child: GestureDetector(
                             onTap: () => _toggleWishlist(med), 
-                          child: Container(
+                            child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)),
                               child: Icon(
