@@ -161,7 +161,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           isLoading = false;
         });
       } else {
-        // THIS IS THE CRITICAL FIX: Turn off the loading skeleton if the server is waking up
         setState(() {
           errorMessage = 'Server is waking up. Please wait 30 seconds and refresh. (Status: ${response.statusCode})';
           isLoading = false;
@@ -222,7 +221,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Adds or removes items from the wishlist
   void _toggleWishlist(dynamic med) {
     setState(() {
       if (wishlist.any((item) => item['id'] == med['id'])) {
@@ -304,9 +302,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // LOGISTICS: Update Order Status
-  // ==========================================
   Future<void> _updateOrderStatus(int orderId, String newStatus) async {
     try {
       final response = await http.patch(
@@ -407,24 +402,20 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Intercepts M-Pesa to show the simulator
   Future<void> _processCheckout({bool isPos = false, String paymentMethod = 'Cash'}) async {
     if (paymentMethod == 'M-Pesa') {
-      // Show the beautiful simulator, then run the API call!
       showDialog(
         context: context,
-        barrierDismissible: false, // Prevents user from clicking outside to cancel
+        barrierDismissible: false, 
         builder: (context) => MpesaSimulationDialog(
           onComplete: () => _finalizeCheckoutAPI(isPos: isPos, paymentMethod: paymentMethod),
         )
       );
     } else {
-      // Normal flow for Cash, Credit, or Pay on Delivery
       _finalizeCheckoutAPI(isPos: isPos, paymentMethod: paymentMethod);
     }
   }
 
-  // The actual Django API engine
   Future<void> _finalizeCheckoutAPI({required bool isPos, required String paymentMethod}) async {
     setState(() => isLoading = true);
     try {
@@ -473,9 +464,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save(), name: 'PharmaStore_Receipt_${order['id']}');
   }
 
-  // Admin PDF Business Report Generator
   Future<void> _generateAdminReport() async {
-    // 1. Calculate the live stats
     double totalRev = 0, pendingRev = 0, cash = 0, mpesa = 0, credit = 0;
     int delivered = 0;
     for (var o in orders) {
@@ -488,7 +477,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       if (o['payment_method'] == 'Credit') credit += price;
     }
 
-    // 2. Draw the PDF Document
     final pdf = pw.Document();
     pdf.addPage(
       pw.MultiPage(
@@ -528,7 +516,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       )
     );
 
-    // 3. Trigger the device's print/save dialog
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(), 
       name: 'PharmaStore_Report_${DateTime.now().millisecondsSinceEpoch}'
@@ -537,7 +524,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Detect screen width to switch between Mobile and Web layouts
     bool isDesktop = MediaQuery.of(context).size.width > 850;
 
     Widget currentBody;
@@ -552,11 +538,9 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     }
 
     return Scaffold(
-      // On Web, the AppBar is hidden. On Mobile, it shows the compact Mobile AppBar.
       appBar: isDesktop ? null : _buildMobileAppBar(),
       body: Column(
         children: [
-          // On Web, draw custom Desktop Header at the top of the body
           if (isDesktop) _buildDesktopHeader(), 
           
           Expanded(
@@ -570,14 +554,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
         ],
       ), 
-      // Bottom Navigation ONLY shows on Mobile
       bottomNavigationBar: isDesktop ? null : _buildBottomNav(), 
     );
   }
 
-  // ==========================================
-  // Desktop-Specific Web Header
-  // ==========================================
   Widget _buildDesktopHeader() {
     return Container(
       color: Colors.white,
@@ -587,12 +567,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           constraints: const BoxConstraints(maxWidth: 1200),
           child: Column(
             children: [
-              // Top Pink Promo Bar
               Container(
                 width: double.infinity, color: const Color(0xFFE91E63), padding: const EdgeInsets.symmetric(vertical: 6),
                 child: const Text("Free Delivery for orders above KES 2,000 | T&Cs Apply", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
               ),
-              // Main Header Row (Logo, Delivery, Icons)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
@@ -610,7 +588,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     ),
                     Row(
                       children: [
-                        // Fake Delivery Badge
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
@@ -625,7 +602,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                                 setState(() => isLoggedIn = true); fetchOrders();
                               });
                             } else {
-                              setState(() => _currentScreen = 'dashboard'); // Admin access
+                              setState(() => _currentScreen = 'dashboard'); 
                             }
                           }
                         ),
@@ -642,19 +619,16 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 )
               ),
               const Divider(height: 1),
-              // Navigation Links & Action Buttons
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Horizontal Web Links
                     Row(
                       children: [
                         TextButton(
                           onPressed: () {
                             if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
-                            // Scrolls down past the banner to the Categories section
                             Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(450, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut));
                           }, 
                           child: const Text("Shop by Category", style: TextStyle(color: Colors.black87, fontSize: 15))
@@ -663,7 +637,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                         TextButton(
                           onPressed: () {
                             if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
-                            // Scrolls down to the All Products section
                             Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(900, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut));
                           }, 
                           child: const Text("All Products", style: TextStyle(color: Colors.black87, fontSize: 15))
@@ -683,7 +656,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                         ),
                       ]
                     ),
-                    // Action Buttons
                     Row(
                       children: [
                         ElevatedButton(
@@ -780,7 +752,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1200),
         child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed, // Keeps all icons visible
+          type: BottomNavigationBarType.fixed, 
           selectedItemColor: Colors.green, 
           unselectedItemColor: Colors.grey,
           currentIndex: 0, 
@@ -795,7 +767,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             if (index == 1) setState(() => _currentScreen = 'wishlist');
             if (index == 2) setState(() => _currentScreen = 'cart');
             if (index == 3) {
-              // If Admin, open dashboard. If Customer, open Tracker!
               setState(() => _currentScreen = isLoggedIn ? 'dashboard' : 'track'); 
             }
           },
@@ -804,9 +775,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // The Wishlist Screen
-  // ==========================================
   Widget _buildWishlistBody() {
     if (wishlist.isEmpty) {
       return const Center(child: Text('Your wishlist is empty!', style: TextStyle(fontSize: 18, color: Colors.grey)));
@@ -843,9 +811,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // Live Order Tracking Screen
-  // ==========================================
   Widget _buildTrackingBody() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -856,7 +821,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           const Text('Enter your Order ID to see live logistics updates.', style: TextStyle(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 32),
           
-          // The Search Bar
           Container(
             constraints: const BoxConstraints(maxWidth: 500),
             padding: const EdgeInsets.all(8),
@@ -891,7 +855,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           
           if (_trackError.isNotEmpty) ...[const SizedBox(height: 24), Text(_trackError, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))],
 
-          // The Live Visual Timeline!
           if (_trackedOrder != null) ...[
             const SizedBox(height: 48),
             Container(
@@ -910,7 +873,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   ),
                   const Divider(height: 32),
                   
-                  // The Logic to calculate the current step
                   Builder(
                     builder: (context) {
                       String status = _trackedOrder!['status'] ?? 'Processed';
@@ -930,7 +892,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             ],
                           ),
                           const SizedBox(height: 32),
-                          // Dynamic Status Message
                           Container(
                             width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
                             child: Row(
@@ -959,7 +920,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Helper widget for the animated circles
   Widget _buildTrackingNode(IconData icon, String label, bool isActive, Color activeColor) {
     return Column(
       children: [
@@ -970,7 +930,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Helper widget for the connecting lines
   Widget _buildTrackingLine(bool isActive) {
     return Expanded(child: AnimatedContainer(duration: const Duration(milliseconds: 500), height: 4, margin: const EdgeInsets.only(bottom: 24), color: isActive ? Colors.green : Colors.grey[300]));
   }
@@ -993,12 +952,13 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       );
     }
     
-    if (errorMessage.isNotEmpty) return SliverToBoxAdapter(child: Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 18)))));
+    // THIS IS THE CRITICAL FIX: Replaced SliverToBoxAdapter with a simple Center widget 
+    // to prevent the web renderer from crashing when displaying the wake-up message.
+    if (errorMessage.isNotEmpty) return Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 18))));
 
     return CustomScrollView(
       controller: _mainScrollController,
       slivers: [
-        // Dynamic Banners with Floating Search Card (Web)
         SliverToBoxAdapter(
           child: Stack(
             clipBehavior: Clip.none, 
@@ -1062,7 +1022,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     ),
               ),
               
-              // Floating Search Box ONLY for Desktop Web
               if (isDesktop)
                 Positioned(
                   bottom: -40, 
@@ -1119,10 +1078,8 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
         ),
         
-        // Adds a spacer to make room for the floating box on web
         if (isDesktop) const SliverToBoxAdapter(child: SizedBox(height: 60)),
         
-        // Hide the Mobile Action Buttons if on Desktop (since they are in the header now)
         if (!isDesktop) 
           SliverToBoxAdapter(
             child: Padding(
