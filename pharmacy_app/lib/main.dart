@@ -1403,13 +1403,11 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     double totalRevenue = 0; 
     double pendingRevenue = 0; 
     int deliveredCount = 0;
-    
-    double cashRevenue = 0;
-    double mpesaRevenue = 0;
-    double creditRevenue = 0;
 
+    // Filter items running out of stock
     List<dynamic> lowStockItems = medicines.where((med) => (med['stock_quantity'] ?? 0) < 10).toList();
 
+    // Calculate revenue totals
     for (var order in orders) { 
       double price = double.parse(order['total_price'].toString()); 
       totalRevenue += price; 
@@ -1420,242 +1418,217 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       if (order['status'] == 'Delivered') {
         deliveredCount += 1;
       }
-
-      if (order['payment_method'] == 'Cash') cashRevenue += price;
-      if (order['payment_method'] == 'M-Pesa') mpesaRevenue += price;
-      if (order['payment_method'] == 'Credit') creditRevenue += price;
     }
-    
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Admin Overview', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003876), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                onPressed: _generateAdminReport,
-                icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-                label: const Text('Download PDF Report', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              )
-            ],
-          ),
-        ),
 
-        if (lowStockItems.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              border: Border.all(color: Colors.red.withOpacity(0.5)),
-              borderRadius: BorderRadius.circular(12),
-            ),
+    // Sort orders into their respective pipeline stages (Reverse so newest are at the top)
+    final newOrders = orders.where((o) => o['status'] == 'Processed').toList().reversed.toList();
+    final dispatchedOrders = orders.where((o) => o['status'] == 'Dispatched').toList().reversed.toList();
+    final completedOrders = orders.where((o) => o['status'] == 'Delivered').toList().reversed.toList();
+    
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          // --- 1. HEADER & EXPORT ---
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 32),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('CRITICAL: Low Stock Alert', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('${lowStockItems.length} items are running dangerously low.', style: const TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24))),
-                        child: Column(
-                          children: [
-                            const Text('Restock Required', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red)),
-                            const SizedBox(height: 16),
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: lowStockItems.length,
-                                itemBuilder: (context, index) {
-                                  final item = lowStockItems[index];
-                                  return ListTile(
-                                    leading: const Icon(Icons.medication, color: Colors.grey),
-                                    title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    trailing: Text('${item['stock_quantity']} Left', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
-                                  );
-                                },
-                              ),
-                            )
-                          ],
-                        ),
-                      )
-                    );
-                  },
-                  child: const Text('View List'),
+                const Text('Vendor Dashboard', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003876), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                  onPressed: _generateAdminReport,
+                  icon: const Icon(Icons.download, color: Colors.white, size: 18),
+                  label: const Text('Export', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 )
               ],
             ),
           ),
-          
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Container(
-                  padding: const EdgeInsets.all(24), 
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF003876), Color(0xFF0056b3)]), 
-                    borderRadius: BorderRadius.circular(16), 
-                    boxShadow: [BoxShadow(color: const Color(0xFF003876).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))]
-                  ), 
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, 
-                    children: [
-                      const Text('Gross Revenue Volume', style: TextStyle(color: Colors.white70, fontSize: 16)), 
-                      const SizedBox(height: 8), 
-                      Text('KES $totalRevenue', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold))
-                    ]
+
+          // --- 2. LOW STOCK WARNING ---
+          if (lowStockItems.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), border: Border.all(color: Colors.red.withOpacity(0.5)), borderRadius: BorderRadius.circular(12)),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Low Stock Alert', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                        Text('${lowStockItems.length} products need restocking.', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24))),
+                          child: Column(
+                            children: [
+                              const Text('Inventory Alerts', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red)),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: lowStockItems.length,
+                                  itemBuilder: (context, index) {
+                                    final item = lowStockItems[index];
+                                    return ListTile(
+                                      leading: const Icon(Icons.medication, color: Colors.grey),
+                                      title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      trailing: Text('${item['stock_quantity']} Left', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                    );
+                                  },
+                                ),
+                              )
+                            ],
+                          ),
+                        )
+                      );
+                    },
+                    child: const Text('View', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                   )
-                ),
+                ],
               ),
-              const SizedBox(width: 16),
-              if (totalRevenue > 0)
+            ),
+
+          // --- 3. COMPACT REVENUE CARDS ---
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), 
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    padding: const EdgeInsets.all(16), 
+                    decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF003876), Color(0xFF0056b3)]), borderRadius: BorderRadius.circular(12)), 
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start, 
+                      children: [
+                        const Text('Gross Revenue', style: TextStyle(color: Colors.white70, fontSize: 12)), 
+                        const SizedBox(height: 4), 
+                        Text('KES $totalRevenue', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))
+                      ]
+                    )
+                  )
+                ), 
+                const SizedBox(width: 8), 
                 Expanded(
                   flex: 1,
                   child: Container(
-                    height: 120,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white, 
-                      borderRadius: BorderRadius.circular(16), 
-                      border: Border.all(color: Colors.grey[200]!)
-                    ),
-                    child: PieChart(
-                      PieChartData(
-                        sectionsSpace: 2, 
-                        centerSpaceRadius: 20,
-                        sections: [
-                          if (cashRevenue > 0) 
-                            PieChartSectionData(color: Colors.green, value: cashRevenue, title: 'Cash\n${((cashRevenue/totalRevenue)*100).toInt()}%', radius: 40, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-                          if (mpesaRevenue > 0) 
-                            PieChartSectionData(color: Colors.blue, value: mpesaRevenue, title: 'M-Pesa\n${((mpesaRevenue/totalRevenue)*100).toInt()}%', radius: 40, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-                          if (creditRevenue > 0) 
-                            PieChartSectionData(color: Colors.orange, value: creditRevenue, title: 'Credit\n${((creditRevenue/totalRevenue)*100).toInt()}%', radius: 40, titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ]
-                      )
+                    padding: const EdgeInsets.all(16), 
+                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withOpacity(0.3))), 
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start, 
+                      children: [
+                        const Text('Pending', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)), 
+                        const SizedBox(height: 4),
+                        Text('KES $pendingRevenue', style: const TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold))
+                      ]
                     )
                   )
                 )
-            ],
+              ]
+            )
           ),
-        ),
+
+          // --- 4. THE PIPELINE TABS ---
+          const SizedBox(height: 16),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            height: 45,
+            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(25)),
+            child: TabBar(
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(color: const Color(0xFF003876), borderRadius: BorderRadius.circular(25)),
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.black54,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              tabs: [
+                Tab(text: 'New (${newOrders.length})'),
+                Tab(text: 'Transit (${dispatchedOrders.length})'),
+                Tab(text: 'Done (${completedOrders.length})'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // --- 5. TAB VIEWS ---
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildOrderListView(newOrders, Icons.inventory, Colors.blue, 'Ready for Dispatch?'),
+                _buildOrderListView(dispatchedOrders, Icons.motorcycle, Colors.orange, 'Currently with Rider'),
+                _buildOrderListView(completedOrders, Icons.check_circle, Colors.green, 'Successfully Delivered'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper widget to build the individual lists inside the tabs
+  Widget _buildOrderListView(List<dynamic> tabOrders, IconData icon, Color badgeColor, String subtitleText) {
+    if (tabOrders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 60, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text('No orders in this stage.', style: TextStyle(color: Colors.grey, fontSize: 16)),
+          ],
+        )
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16), 
+      itemCount: tabOrders.length, 
+      itemBuilder: (context, index) { 
+        final order = tabOrders[index]; 
+        final paymentMethod = order['payment_method'] ?? 'Cash'; 
         
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0), 
-          child: Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16), 
-                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withOpacity(0.3))), 
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, 
-                    children: [
-                      const Icon(Icons.pending_actions, color: Colors.orange), 
-                      const SizedBox(height: 8), 
-                      const Text('Pending Cash', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)), 
-                      Text('KES $pendingRevenue', style: const TextStyle(color: Colors.orange, fontSize: 16, fontWeight: FontWeight.bold))
-                    ]
-                  )
-                )
+        return InkWell(
+          onTap: () => _showDispatchControlPanel(order),
+          child: Card(
+            elevation: 0, 
+            margin: const EdgeInsets.only(bottom: 12), 
+            shape: RoundedRectangleBorder(side: BorderSide(color: Colors.grey[200]!), borderRadius: BorderRadius.circular(12)), 
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), 
+              leading: Container(
+                padding: const EdgeInsets.all(12), 
+                decoration: BoxDecoration(color: badgeColor.withOpacity(0.1), shape: BoxShape.circle), 
+                child: Icon(icon, color: badgeColor)
               ), 
-              const SizedBox(width: 12), 
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16), 
-                  decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.green.withOpacity(0.3))), 
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, 
-                    children: [
-                      const Icon(Icons.check_circle, color: Colors.green), 
-                      const SizedBox(height: 8), 
-                      const Text('Delivered', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)), 
-                      Text('$deliveredCount Orders', style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold))
-                    ]
-                  )
-                )
-              )
-            ]
-          )
-        ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 8.0), 
-          child: Align(
-            alignment: Alignment.centerLeft, 
-            child: Text('Live Dispatch Tracker', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-          )
-        ),
-        Expanded(
-          child: orders.isEmpty 
-            ? const Center(child: Text('No orders yet.', style: TextStyle(color: Colors.grey))) 
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16), 
-                itemCount: orders.length, 
-                itemBuilder: (context, index) { 
-                  final order = orders[orders.length - 1 - index]; 
-                  final status = order['status'] ?? 'Processed'; 
-                  final paymentMethod = order['payment_method'] ?? 'Cash'; 
-                  
-                  Color badgeColor = Colors.blue; 
-                  if (status == 'Dispatched') badgeColor = Colors.orange; 
-                  if (status == 'Delivered') badgeColor = Colors.green; 
-                  
-                  return InkWell(
-                    onTap: () => _showDispatchControlPanel(order),
-                    child: Card(
-                      elevation: 0, 
-                      margin: const EdgeInsets.only(bottom: 12), 
-                      shape: RoundedRectangleBorder(side: BorderSide(color: Colors.grey[200]!), borderRadius: BorderRadius.circular(12)), 
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(16), 
-                        leading: Container(
-                          padding: const EdgeInsets.all(12), 
-                          decoration: BoxDecoration(color: badgeColor.withOpacity(0.1), shape: BoxShape.circle), 
-                          child: Icon(Icons.local_shipping, color: badgeColor)
-                        ), 
-                        title: Text('Order #${order['id']} - ${order['quantity_sold']} Items', style: const TextStyle(fontWeight: FontWeight.bold)), 
-                        subtitle: Text('KES ${order['total_price']} • $paymentMethod\nTap to update status', style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500)), 
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min, 
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
-                              decoration: BoxDecoration(color: badgeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: badgeColor)), 
-                              child: Text(status, style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 12))
-                            ), 
-                            const SizedBox(width: 8), 
-                            IconButton(
-                              icon: const Icon(Icons.print, color: Color(0xFF003876)), 
-                              tooltip: 'Print Dispatch Receipt', 
-                              onPressed: () => _printReceipt(order)
-                            )
-                          ]
-                        )
-                      )
-                    )
-                  ); 
+              title: Text('Order #${order['id']} - ${order['quantity_sold']} Items', style: const TextStyle(fontWeight: FontWeight.bold)), 
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text('KES ${order['total_price']} • $paymentMethod\n$subtitleText', style: const TextStyle(color: Colors.black54, height: 1.4)),
+              ), 
+              trailing: IconButton(
+                icon: const Icon(Icons.print, color: Color(0xFF003876)), 
+                tooltip: 'Print Dispatch Receipt', 
+                onPressed: () {
+                  // Prevent the ListTile onTap from firing when pressing the print button
+                  _printReceipt(order);
                 }
               )
-        ),
-      ],
+            )
+          )
+        ); 
+      }
     );
   }
 
