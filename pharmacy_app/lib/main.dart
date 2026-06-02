@@ -1284,66 +1284,70 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 40)),
-        SliverToBoxAdapter(
-          child: Container(
-            color: const Color(0xFF0056b3), padding: const EdgeInsets.all(40), 
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceAround, 
-              children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, 
-                  children: [
-                    Text('Customer Service', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
-                    SizedBox(height: 16), 
-                    Text('Service and Warranty', style: TextStyle(color: Colors.white70)), 
-                    SizedBox(height: 8), 
-                    Text('Returns and Exchanges', style: TextStyle(color: Colors.white70)), 
-                    SizedBox(height: 8), 
-                    Text('Secured Online Payment', style: TextStyle(color: Colors.white70))
-                  ]
-                ), 
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, 
-                  children: [
-                    Text('About PharmaStore', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
-                    SizedBox(height: 16), 
-                    Text('About Us', style: TextStyle(color: Colors.white70)), 
-                    SizedBox(height: 8), 
-                    Text('Pharmacy Locations', style: TextStyle(color: Colors.white70)), 
-                    SizedBox(height: 8), 
-                    Text('Health & Safety Policies', style: TextStyle(color: Colors.white70))
-                  ]
-                ), 
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, 
-                  children: [
-                    const Text('Need Help?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
-                    SizedBox(height: 16), 
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
-                      decoration: BoxDecoration(color: const Color(0xFF003876), borderRadius: BorderRadius.circular(8)), 
-                      child: const Row(
-                        children: [
-                          Icon(Icons.phone, color: Colors.white), 
-                          SizedBox(width: 8), 
-                          Text('0800 221 322', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))
-                        ]
+        
+        // ONLY show the massive blue footer on Desktop Web
+        if (isDesktop) ...[
+          SliverToBoxAdapter(
+            child: Container(
+              color: const Color(0xFF0056b3), padding: const EdgeInsets.all(40), 
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceAround, 
+                children: [
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, 
+                    children: [
+                      Text('Customer Service', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
+                      SizedBox(height: 16), 
+                      Text('Service and Warranty', style: TextStyle(color: Colors.white70)), 
+                      SizedBox(height: 8), 
+                      Text('Returns and Exchanges', style: TextStyle(color: Colors.white70)), 
+                      SizedBox(height: 8), 
+                      Text('Secured Online Payment', style: TextStyle(color: Colors.white70))
+                    ]
+                  ), 
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, 
+                    children: [
+                      Text('About PharmaStore', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
+                      SizedBox(height: 16), 
+                      Text('About Us', style: TextStyle(color: Colors.white70)), 
+                      SizedBox(height: 8), 
+                      Text('Pharmacy Locations', style: TextStyle(color: Colors.white70)), 
+                      SizedBox(height: 8), 
+                      Text('Health & Safety Policies', style: TextStyle(color: Colors.white70))
+                    ]
+                  ), 
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, 
+                    children: [
+                      const Text('Need Help?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
+                      SizedBox(height: 16), 
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+                        decoration: BoxDecoration(color: const Color(0xFF003876), borderRadius: BorderRadius.circular(8)), 
+                        child: const Row(
+                          children: [
+                            Icon(Icons.phone, color: Colors.white), 
+                            SizedBox(width: 8), 
+                            Text('0800 221 322', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))
+                          ]
+                        )
                       )
-                    )
-                  ]
-                )
-              ]
+                    ]
+                  )
+                ]
+              )
+            )
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              color: const Color(0xFF003876), padding: const EdgeInsets.all(16), 
+              child: const Center(
+                child: Text('© 2026 PharmaStore Kenya. All rights reserved.', style: TextStyle(color: Colors.white54))
+              )
             )
           )
-        ),
-        SliverToBoxAdapter(
-          child: Container(
-            color: const Color(0xFF003876), padding: const EdgeInsets.all(16), 
-            child: const Center(
-              child: Text('© 2026 PharmaStore Kenya. All rights reserved.', style: TextStyle(color: Colors.white54))
-            )
-          )
-        )
+        ]
       ],
     );
   }
