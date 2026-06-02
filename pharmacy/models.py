@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.conf import settings
 
 class Medicine(models.Model):
     name = models.CharField(max_length=200)
@@ -58,12 +60,37 @@ class Order(models.Model):
 class VendorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='vendor_profile')
     pharmacy_name = models.CharField(max_length=200)
+    
+    # ==========================================
+    # ⚠️ NEW: Email Field for Auto-Notifications
+    # ==========================================
+    email = models.EmailField(max_length=255, null=True, blank=True) 
+    
     phone_number = models.CharField(max_length=20)
     national_id = models.CharField(max_length=50)
     ppb_license = models.CharField(max_length=100)
     county_license = models.CharField(max_length=100)
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # 1. Check if this is an existing profile being updated (not a brand new one)
+        if self.pk:
+            old_profile = VendorProfile.objects.get(pk=self.pk)
+            
+            # 2. If they were NOT approved before, but they ARE approved now, send the email!
+            if not old_profile.is_approved and self.is_approved:
+                if self.email:
+                    send_mail(
+                        subject='Your PharmaStore Account is Verified!',
+                        message=f'Hello {self.pharmacy_name},\n\nGreat news! Your PPB and County licenses have been verified. You can now log in to the PharmaStore Vendor Portal and start managing your inventory and POS.\n\nWelcome to the team!',
+                        from_email=settings.EMAIL_HOST_USER,
+                        recipient_list=[self.email],
+                        fail_silently=False,
+                    )
+        
+        # 3. Save the actual record to the database
+        super().save(*args, **kwargs)
 
     def __str__(self):
         status = "✅ Approved" if self.is_approved else "⏳ Pending"

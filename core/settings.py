@@ -131,3 +131,14 @@ CORS_ALLOWED_ORIGINS = [
 # Media files (Images you upload)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ==========================================
+# ⚠️ NEW: EMAIL CONFIGURATION
+# ==========================================
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+# TODO: Replace these with your actual details before pushing!
+EMAIL_HOST_USER = 'your_pharmastore_email@gmail.com' 
+EMAIL_HOST_PASSWORD = 'your_app_password'

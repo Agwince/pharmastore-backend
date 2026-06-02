@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Medicine, Supplier, Order, VendorProfile, PromoBanner, Prescription # ⚠️ ADDED Prescription
+from .models import Medicine, Supplier, Order, VendorProfile, PromoBanner, Prescription
 
 class MedicineSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,6 +22,8 @@ class OrderSerializer(serializers.ModelSerializer):
 class VendorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorProfile
+        # ⚠️ MAGIC: Because of '__all__', the new 'email' field 
+        # is automatically included and ready to receive data from Flutter!
         fields = '__all__'
 
 # ==========================================
@@ -33,7 +35,7 @@ class PromoBannerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 # ==========================================
-# ⚠️ NEW: Serializer for Prescription Uploads
+# Serializer for Prescription Uploads
 # ==========================================
 class PrescriptionSerializer(serializers.ModelSerializer):
     class Meta:

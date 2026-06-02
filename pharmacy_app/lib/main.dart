@@ -1768,10 +1768,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       setState(() => _isLoading = false);
       if (response.statusCode == 200) {
-        Navigator.pop(context, true); // FIXED: Only returns 'true' when login is successful!
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Admin Access Granted!'), backgroundColor: Colors.green));
+        Navigator.pop(context, true); 
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vendor Access Granted!'), backgroundColor: Colors.green));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials.'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials or account not verified.'), backgroundColor: Colors.red));
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -1798,9 +1798,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.admin_panel_settings, size: 60, color: Color(0xFF003876)),
+                  const Icon(Icons.storefront, size: 60, color: Color(0xFF003876)),
                   const SizedBox(height: 16),
-                  const Text('Admin Login', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
+                  const Text('Vendor Login', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
                   const SizedBox(height: 32),
                   
                   TextField(
@@ -1856,6 +1856,7 @@ class RegistrationScreen extends StatefulWidget {
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(); // NEW: Email Controller
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _ppbLicenseController = TextEditingController();
@@ -1874,6 +1875,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'pharmacy_name': _nameController.text,
+          'email': _emailController.text, // NEW: Sending email to Django
           'phone_number': _phoneController.text,
           'national_id': _idController.text,
           'ppb_license': _ppbLicenseController.text,
@@ -1885,21 +1887,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() => _isLoading = false);
 
       if (response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration Pending Approval!'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration Pending! We will email you once verified.'), backgroundColor: Colors.green));
         Navigator.pop(context); 
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed. Check details.'), backgroundColor: Colors.red));
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Server Error. Cannot connect to Django.'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Server Error. Cannot connect to backend.'), backgroundColor: Colors.red));
     }
   }
 
-  Widget _buildTextField({required String label, required TextEditingController controller, required IconData icon, bool isPassword = false}) {
+  Widget _buildTextField({required String label, required TextEditingController controller, required IconData icon, bool isPassword = false, TextInputType keyboardType = TextInputType.text}) {
     return TextFormField(
       controller: controller,
       obscureText: isPassword,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF003876)),
@@ -1936,17 +1939,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   const Icon(Icons.store, size: 60, color: Color(0xFF003876)),
                   const SizedBox(height: 16),
                   const Text('Vendor Registration', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
+                  const SizedBox(height: 8),
+                  const Text('We will email you once your licenses are verified.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 32),
                   
                   _buildTextField(label: 'Pharmacy Name', controller: _nameController, icon: Icons.local_pharmacy),
                   const SizedBox(height: 16),
-                  _buildTextField(label: 'Phone Number', controller: _phoneController, icon: Icons.phone),
+                  _buildTextField(label: 'Email Address', controller: _emailController, icon: Icons.email, keyboardType: TextInputType.emailAddress), // NEW: Email Input
+                  const SizedBox(height: 16),
+                  _buildTextField(label: 'Phone Number', controller: _phoneController, icon: Icons.phone, keyboardType: TextInputType.phone),
                   const SizedBox(height: 16),
                   _buildTextField(label: 'National ID', controller: _idController, icon: Icons.badge),
                   const SizedBox(height: 16),
-                  _buildTextField(label: 'PPB License', controller: _ppbLicenseController, icon: Icons.medical_information),
+                  _buildTextField(label: 'PPB License Number', controller: _ppbLicenseController, icon: Icons.medical_information),
                   const SizedBox(height: 16),
-                  _buildTextField(label: 'County License', controller: _countyLicenseController, icon: Icons.account_balance),
+                  _buildTextField(label: 'County License Number', controller: _countyLicenseController, icon: Icons.account_balance),
                   const SizedBox(height: 16),
                   _buildTextField(label: 'Password', controller: _passwordController, icon: Icons.lock, isPassword: true),
                   
