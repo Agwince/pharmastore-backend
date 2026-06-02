@@ -8,7 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:shimmer/shimmer.dart'; 
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:image_picker/image_picker.dart'; 
-import 'package:url_launcher/url_launcher.dart'; // Added for APK download
+import 'package:url_launcher/url_launcher.dart'; 
 
 void main() {
   runApp(const PharmacyApp());
@@ -42,7 +42,6 @@ class ResponsiveWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIXED: Removed Center and ConstrainedBox for true edge-to-edge layout
     return SizedBox(
       width: double.infinity,
       child: child,
@@ -118,7 +117,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     super.dispose();
   }
 
-  // --- NEW: APK Download Logic ---
   Future<void> _downloadAPK() async {
     final Uri url = Uri.parse('/pharmastore.apk');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
@@ -668,7 +666,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                       child: const Text("Speak to a Doctor", style: TextStyle(fontWeight: FontWeight.bold))
                     ),
                     const SizedBox(width: 16),
-                    // NEW DOWNLOAD APP BUTTON
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003876), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
                       onPressed: _downloadAPK, 
@@ -691,7 +688,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // FIXED: Removed Center wrapper that caused layout crashes
   PreferredSizeWidget _buildMobileAppBar() {
     return AppBar(
       toolbarHeight: 80,
@@ -748,7 +744,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // FIXED: Removed Center wrapper which was pushing it into the middle of the screen
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed, 
@@ -1285,8 +1280,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 40)),
         
-        // ONLY show the massive blue footer on Desktop Web
-        if (isDesktop) ...[
+        if (isDesktop)
           SliverToBoxAdapter(
             child: Container(
               color: const Color(0xFF0056b3), padding: const EdgeInsets.all(40), 
@@ -1339,6 +1333,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               )
             )
           ),
+        if (isDesktop)
           SliverToBoxAdapter(
             child: Container(
               color: const Color(0xFF003876), padding: const EdgeInsets.all(16), 
@@ -1347,7 +1342,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               )
             )
           )
-        ]
       ],
     );
   }
@@ -1428,7 +1422,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     
     return Column(
       children: [
-        // Dashboard Header with PDF Download Button
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -2098,6 +2091,7 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
                   const Text('2. Attach Doctor\'s Note', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
                   const SizedBox(height: 16),
                   
+                  // Image Picker Box
                   GestureDetector(
                     onTap: _pickImage,
                     child: Container(
@@ -2164,18 +2158,21 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
   }
 
   Future<void> _runSimulation() async {
+    // Step 1: Connecting
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) setState(() {
       statusMessage = "Sending STK Push to your phone...";
       currentIcon = Icons.smartphone;
     });
 
+    // Step 2: Waiting for User PIN
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) setState(() {
       statusMessage = "Please enter your M-PESA PIN...";
       currentIcon = Icons.dialpad;
     });
 
+    // Step 3: Payment Confirmed!
     await Future.delayed(const Duration(milliseconds: 3500));
     if (mounted) setState(() {
       statusMessage = "Payment Received Successfully!";
@@ -2183,6 +2180,7 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
       isProcessing = false;
     });
 
+    // Step 4: Close the dialog and trigger the Django API
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) {
       Navigator.pop(context); 
@@ -2202,6 +2200,7 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Bouncing/Changing M-Pesa Icon
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
@@ -2216,9 +2215,11 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
             const Text('M-PESA Express', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50))),
             const SizedBox(height: 24),
             
+            // Loading Spinner (Hides when done)
             if (isProcessing) const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50))),
             if (isProcessing) const SizedBox(height: 24),
             
+            // Dynamic Status Text
             Text(statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
           ],
         ),
