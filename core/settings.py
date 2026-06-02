@@ -27,6 +27,8 @@ SECRET_KEY = 'django-insecure-*nz1&$orlh$fk_pte!k@x4k$cpf(+1ba+$1-it+o!w!12auo_*
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+# Tells Django to generate HTTPS links for images behind Render's proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 INSTALLED_APPS = [
