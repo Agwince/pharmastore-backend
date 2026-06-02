@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:shimmer/shimmer.dart'; 
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:image_picker/image_picker.dart'; 
+import 'package:url_launcher/url_launcher.dart'; // Added for APK download
 
 void main() {
   runApp(const PharmacyApp());
@@ -41,11 +42,10 @@ class ResponsiveWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: double.infinity), // Restored to Full Screen
-        child: child,
-      ),
+    // FIXED: Removed Center and ConstrainedBox for true edge-to-edge layout
+    return SizedBox(
+      width: double.infinity,
+      child: child,
     );
   }
 }
@@ -69,7 +69,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   List<Map<String, dynamic>> posCart = []; 
   
   List<dynamic> promoBanners = [];
-  List<dynamic> wishlist = []; // Stores saved items
+  List<dynamic> wishlist = []; 
 
   bool isLoading = true;
   String errorMessage = '';
@@ -81,13 +81,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _posSearchController = TextEditingController();
   
-  // Tracking Variables
   final TextEditingController _trackController = TextEditingController();
   Map<String, dynamic>? _trackedOrder;
   String _trackError = '';
 
   final PageController _bannerController = PageController(viewportFraction: 0.9);
-  final ScrollController _mainScrollController = ScrollController(); // Controls scrolling
+  final ScrollController _mainScrollController = ScrollController(); 
   Timer? _bannerTimer;
   int _currentBannerIndex = 0;
 
@@ -119,6 +118,14 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     super.dispose();
   }
 
+  // --- NEW: APK Download Logic ---
+  Future<void> _downloadAPK() async {
+    final Uri url = Uri.parse('/pharmastore.apk');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      _showTopSnackbar('Could not launch download.', color: Colors.red);
+    }
+  }
+
   void _startBannerTimer() {
     if (promoBanners.isEmpty) return;
     _bannerTimer?.cancel(); 
@@ -137,7 +144,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchBanners() async {
     try {
-      // FIXED: Removed trailing slash
       final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/banners'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
@@ -153,7 +159,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchMedicines() async {
     try {
-      // FIXED: Removed trailing slash to prevent Django 404
       final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/medicines'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
@@ -176,7 +181,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Future<void> fetchOrders() async {
     try {
-      // FIXED: Removed trailing slash
       final response = await http.get(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/orders'));
       if (response.statusCode == 200) {
         final decodedData = json.decode(response.body);
@@ -225,7 +229,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Adds or removes items from the wishlist
   void _toggleWishlist(dynamic med) {
     setState(() {
       if (wishlist.any((item) => item['id'] == med['id'])) {
@@ -307,12 +310,8 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // LOGISTICS: Update Order Status
-  // ==========================================
   Future<void> _updateOrderStatus(int orderId, String newStatus) async {
     try {
-      // FIXED: Removed trailing slash
       final response = await http.patch(
         Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/orders/$orderId'),
         headers: {'Content-Type': 'application/json'},
@@ -411,29 +410,24 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Intercepts M-Pesa to show the simulator
   Future<void> _processCheckout({bool isPos = false, String paymentMethod = 'Cash'}) async {
     if (paymentMethod == 'M-Pesa') {
-      // Show the beautiful simulator, then run the API call!
       showDialog(
         context: context,
-        barrierDismissible: false, // Prevents user from clicking outside to cancel
+        barrierDismissible: false, 
         builder: (context) => MpesaSimulationDialog(
           onComplete: () => _finalizeCheckoutAPI(isPos: isPos, paymentMethod: paymentMethod),
         )
       );
     } else {
-      // Normal flow for Cash, Credit, or Pay on Delivery
       _finalizeCheckoutAPI(isPos: isPos, paymentMethod: paymentMethod);
     }
   }
 
-  // The actual Django API engine
   Future<void> _finalizeCheckoutAPI({required bool isPos, required String paymentMethod}) async {
     setState(() => isLoading = true);
     try {
       final itemsToProcess = isPos ? posCart : cart;
-      // FIXED: Removed trailing slash
       final response = await http.post(
         Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/checkout'),
         headers: {'Content-Type': 'application/json'},
@@ -478,9 +472,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save(), name: 'PharmaStore_Receipt_${order['id']}');
   }
 
-  // Admin PDF Business Report Generator
   Future<void> _generateAdminReport() async {
-    // 1. Calculate the live stats
     double totalRev = 0, pendingRev = 0, cash = 0, mpesa = 0, credit = 0;
     int delivered = 0;
     for (var o in orders) {
@@ -493,7 +485,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       if (o['payment_method'] == 'Credit') credit += price;
     }
 
-    // 2. Draw the PDF Document
     final pdf = pw.Document();
     pdf.addPage(
       pw.MultiPage(
@@ -533,7 +524,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       )
     );
 
-    // 3. Trigger the device's print/save dialog
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(), 
       name: 'PharmaStore_Report_${DateTime.now().millisecondsSinceEpoch}'
@@ -542,7 +532,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Detect screen width to switch between Mobile and Web layouts
     bool isDesktop = MediaQuery.of(context).size.width > 850;
 
     Widget currentBody;
@@ -557,13 +546,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     }
 
     return Scaffold(
-      // On Web, the AppBar is hidden. On Mobile, it shows the compact Mobile AppBar.
       appBar: isDesktop ? null : _buildMobileAppBar(),
       body: Column(
         children: [
-          // On Web, draw custom Desktop Header at the top of the body
           if (isDesktop) _buildDesktopHeader(), 
-          
           Expanded(
             child: ResponsiveWrapper(
               child: AnimatedSwitcher(
@@ -575,243 +561,217 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
         ],
       ), 
-      // Bottom Navigation ONLY shows on Mobile
       bottomNavigationBar: isDesktop ? null : _buildBottomNav(), 
     );
   }
 
-  // ==========================================
-  // Desktop-Specific Web Header
-  // ==========================================
   Widget _buildDesktopHeader() {
     return Container(
       color: Colors.white,
       width: double.infinity,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: double.infinity), // Restored to Full Screen
-          child: Column(
-            children: [
-              // Top Pink Promo Bar
-              Container(
-                width: double.infinity, color: const Color(0xFFE91E63), padding: const EdgeInsets.symmetric(vertical: 6),
-                child: const Text("Free Delivery for orders above KES 2,000 | T&Cs Apply", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-              // Main Header Row (Logo, Delivery, Icons)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity, color: const Color(0xFFE91E63), padding: const EdgeInsets.symmetric(vertical: 6),
+            child: const Text("Free Delivery for orders above KES 2,000 | T&Cs Apply", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                InkWell(
+                  onTap: () => setState(() => _currentScreen = 'shop'),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_pharmacy, color: Color(0xFFE91E63), size: 40),
+                      const SizedBox(width: 8),
+                      const Text('PharmaStore', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFE91E63))),
+                    ]
+                  ),
+                ),
+                Row(
                   children: [
-                    InkWell(
-                      onTap: () => setState(() => _currentScreen = 'shop'),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.local_pharmacy, color: Color(0xFFE91E63), size: 40),
-                          const SizedBox(width: 8),
-                          const Text('PharmaStore', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFE91E63))),
-                        ]
-                      ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                      child: const Row(children: [Icon(Icons.flash_on, color: Colors.orange, size: 20), SizedBox(width: 8), Text("Express Delivery to\nNairobi", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))]),
                     ),
-                    Row(
-                      children: [
-                        // Fake Delivery Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                          child: const Row(children: [Icon(Icons.flash_on, color: Colors.orange, size: 20), SizedBox(width: 8), Text("Express Delivery to\nNairobi", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))]),
-                        ),
-                        const SizedBox(width: 32),
-                        IconButton(
-                          icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : Colors.black87, size: 28),
-                          onPressed: () {
-                            if (!isLoggedIn) {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((_) {
-                                setState(() => isLoggedIn = true); fetchOrders();
-                              });
-                            } else {
-                              setState(() => _currentScreen = 'dashboard'); // Admin access
-                            }
-                          }
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
-                          onPressed: () => setState(() => _currentScreen = 'cart'),
-                          icon: const Icon(Icons.shopping_cart, size: 20),
-                          label: Text(cart.length.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        )
-                      ]
+                    const SizedBox(width: 32),
+                    IconButton(
+                      icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : Colors.black87, size: 28),
+                      onPressed: () {
+                        if (!isLoggedIn) {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((_) {
+                            setState(() => isLoggedIn = true); fetchOrders();
+                          });
+                        } else {
+                          setState(() => _currentScreen = 'dashboard'); 
+                        }
+                      }
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14)),
+                      onPressed: () => setState(() => _currentScreen = 'cart'),
+                      icon: const Icon(Icons.shopping_cart, size: 20),
+                      label: Text(cart.length.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     )
                   ]
                 )
-              ),
-              const Divider(height: 1),
-              // Navigation Links & Action Buttons
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ]
+            )
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
                   children: [
-                    // Horizontal Web Links
-                    Row(
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
-                            // Scrolls down past the banner to the Categories section
-                            Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(450, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut));
-                          }, 
-                          child: const Text("Shop by Category", style: TextStyle(color: Colors.black87, fontSize: 15))
-                        ),
-                        const SizedBox(width: 16),
-                        TextButton(
-                          onPressed: () {
-                            if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
-                            // Scrolls down to the All Products section
-                            Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(900, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut));
-                          }, 
-                          child: const Text("All Products", style: TextStyle(color: Colors.black87, fontSize: 15))
-                        ),
-                        const SizedBox(width: 16),
-                        TextButton(
-                          onPressed: () {
-                            _setCategory('All');
-                            _showTopSnackbar('Showing all brands', color: Colors.green);
-                          }, 
-                          child: const Text("Shop by Brand", style: TextStyle(color: Colors.black87, fontSize: 15))
-                        ),
-                        const SizedBox(width: 16),
-                        TextButton(
-                          onPressed: () => setState(() => _currentScreen = 'track'), 
-                          child: const Text("Track Order", style: TextStyle(color: Colors.black87, fontSize: 15))
-                        ),
-                      ]
+                    TextButton(
+                      onPressed: () {
+                        if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
+                        Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(450, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut));
+                      }, 
+                      child: const Text("Shop by Category", style: TextStyle(color: Colors.black87, fontSize: 15))
                     ),
-                    // Action Buttons
-                    Row(
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
-                          onPressed: () => _showTopSnackbar('Telehealth coming soon!', color: Colors.blue), 
-                          child: const Text("Speak to a Doctor", style: TextStyle(fontWeight: FontWeight.bold))
-                        ),
-                        const SizedBox(width: 16),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF65B741), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
-                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrescriptionUploadScreen())), 
-                          child: const Text("Upload a Prescription", style: TextStyle(fontWeight: FontWeight.bold))
-                        ),
-                      ]
-                    )
+                    const SizedBox(width: 16),
+                    TextButton(
+                      onPressed: () {
+                        if (_currentScreen != 'shop') setState(() => _currentScreen = 'shop');
+                        Future.delayed(const Duration(milliseconds: 100), () => _mainScrollController.animateTo(900, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut));
+                      }, 
+                      child: const Text("All Products", style: TextStyle(color: Colors.black87, fontSize: 15))
+                    ),
+                    const SizedBox(width: 16),
+                    TextButton(
+                      onPressed: () {
+                        _setCategory('All');
+                        _showTopSnackbar('Showing all brands', color: Colors.green);
+                      }, 
+                      child: const Text("Shop by Brand", style: TextStyle(color: Colors.black87, fontSize: 15))
+                    ),
+                    const SizedBox(width: 16),
+                    TextButton(
+                      onPressed: () => setState(() => _currentScreen = 'track'), 
+                      child: const Text("Track Order", style: TextStyle(color: Colors.black87, fontSize: 15))
+                    ),
+                  ]
+                ),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+                      onPressed: () => _showTopSnackbar('Telehealth coming soon!', color: Colors.blue), 
+                      child: const Text("Speak to a Doctor", style: TextStyle(fontWeight: FontWeight.bold))
+                    ),
+                    const SizedBox(width: 16),
+                    // NEW DOWNLOAD APP BUTTON
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003876), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+                      onPressed: _downloadAPK, 
+                      icon: const Icon(Icons.android),
+                      label: const Text("Download App", style: TextStyle(fontWeight: FontWeight.bold))
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF65B741), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrescriptionUploadScreen())), 
+                      child: const Text("Upload a Prescription", style: TextStyle(fontWeight: FontWeight.bold))
+                    ),
                   ]
                 )
-              )
-            ]
+              ]
+            )
           )
-        )
+        ]
       )
     );
   }
 
+  // FIXED: Removed Center wrapper that caused layout crashes
   PreferredSizeWidget _buildMobileAppBar() {
     return AppBar(
       toolbarHeight: 80,
-      title: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: double.infinity), // Restored to Full Screen
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _currentScreen = 'shop'),
+            child: Row(
+              children: [
+                Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 24)),
+                const SizedBox(width: 12), const Text('PharmaStore', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFFE91E63))),
+              ],
+            ),
+          ),
+          Row(
             children: [
-              InkWell(
-                onTap: () => setState(() => _currentScreen = 'shop'),
-                child: Row(
-                  children: [
-                    Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 24)),
-                    const SizedBox(width: 12), const Text('PharmaStore', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFFE91E63))),
-                  ],
+              TextButton.icon(
+                onPressed: () {
+                  if (!isLoggedIn) {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((_) {
+                      setState(() => isLoggedIn = true); fetchOrders();
+                    });
+                  }
+                },
+                icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : const Color(0xFF003876)),
+                label: Text(isLoggedIn ? 'Admin' : 'Login', style: TextStyle(color: isLoggedIn ? Colors.green : const Color(0xFF003876), fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+              const SizedBox(width: 16),
+              TweenAnimationBuilder(
+                key: ValueKey(cart.length), tween: Tween<double>(begin: 0.7, end: 1.0), duration: const Duration(milliseconds: 500), curve: Curves.elasticOut, 
+                builder: (context, scale, child) { return Transform.scale(scale: scale, child: child); },
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                  onPressed: () => setState(() => _currentScreen = 'cart'),
+                  icon: const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+                  label: Text(cart.length.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
-              Row(
-                children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      if (!isLoggedIn) {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((_) {
-                          setState(() => isLoggedIn = true); fetchOrders();
-                        });
-                      }
-                    },
-                    icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : const Color(0xFF003876)),
-                    label: Text(isLoggedIn ? 'Admin' : 'Login', style: TextStyle(color: isLoggedIn ? Colors.green : const Color(0xFF003876), fontWeight: FontWeight.bold, fontSize: 16)),
-                  ),
-                  const SizedBox(width: 16),
-                  TweenAnimationBuilder(
-                    key: ValueKey(cart.length), tween: Tween<double>(begin: 0.7, end: 1.0), duration: const Duration(milliseconds: 500), curve: Curves.elasticOut, 
-                    builder: (context, scale, child) { return Transform.scale(scale: scale, child: child); },
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-                      onPressed: () => setState(() => _currentScreen = 'cart'),
-                      icon: const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
-                      label: Text(cart.length.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    ),
-                  ),
-                ],
-              )
             ],
-          ),
-        ),
+          )
+        ],
       ),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(70.0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: double.infinity), // Restored to Full Screen
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-              child: TextField(
-                controller: _searchController, onChanged: _filterSearch,
-                decoration: InputDecoration(hintText: 'Search 50,000+ medical items', filled: true, fillColor: Colors.grey[100], prefixIcon: const Icon(Icons.search, color: Colors.grey), contentPadding: const EdgeInsets.symmetric(vertical: 0), border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)),
-              ),
-            ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          child: TextField(
+            controller: _searchController, onChanged: _filterSearch,
+            decoration: InputDecoration(hintText: 'Search 50,000+ medical items', filled: true, fillColor: Colors.grey[100], prefixIcon: const Icon(Icons.search, color: Colors.grey), contentPadding: const EdgeInsets.symmetric(vertical: 0), border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)),
           ),
         ),
       ),
     );
   }
 
+  // FIXED: Removed Center wrapper which was pushing it into the middle of the screen
   Widget _buildBottomNav() {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: double.infinity), // Restored to Full Screen
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed, // Keeps all icons visible
-          selectedItemColor: Colors.green, 
-          unselectedItemColor: Colors.grey,
-          currentIndex: 0, 
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'WishList'),
-            BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), label: 'Cart'),
-            BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
-          ],
-          onTap: (index) {
-            if (index == 0) setState(() => _currentScreen = 'shop');
-            if (index == 1) setState(() => _currentScreen = 'wishlist');
-            if (index == 2) setState(() => _currentScreen = 'cart');
-            if (index == 3) {
-              // If Admin, open dashboard. If Customer, open Tracker!
-              setState(() => _currentScreen = isLoggedIn ? 'dashboard' : 'track'); 
-            }
-          },
-        ),
-      ),
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed, 
+      selectedItemColor: Colors.green, 
+      unselectedItemColor: Colors.grey,
+      currentIndex: 0, 
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'WishList'),
+        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), label: 'Cart'),
+        BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
+      ],
+      onTap: (index) {
+        if (index == 0) setState(() => _currentScreen = 'shop');
+        if (index == 1) setState(() => _currentScreen = 'wishlist');
+        if (index == 2) setState(() => _currentScreen = 'cart');
+        if (index == 3) {
+          setState(() => _currentScreen = isLoggedIn ? 'dashboard' : 'track'); 
+        }
+      },
     );
   }
 
-  // ==========================================
-  // The Wishlist Screen
-  // ==========================================
   Widget _buildWishlistBody() {
     if (wishlist.isEmpty) {
       return const Center(child: Text('Your wishlist is empty!', style: TextStyle(fontSize: 18, color: Colors.grey)));
@@ -848,9 +808,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // ==========================================
-  // Live Order Tracking Screen
-  // ==========================================
   Widget _buildTrackingBody() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -861,7 +818,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           const Text('Enter your Order ID to see live logistics updates.', style: TextStyle(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 32),
           
-          // The Search Bar
           Container(
             constraints: const BoxConstraints(maxWidth: 500),
             padding: const EdgeInsets.all(8),
@@ -896,7 +852,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           
           if (_trackError.isNotEmpty) ...[const SizedBox(height: 24), Text(_trackError, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))],
 
-          // The Live Visual Timeline!
           if (_trackedOrder != null) ...[
             const SizedBox(height: 48),
             Container(
@@ -915,7 +870,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   ),
                   const Divider(height: 32),
                   
-                  // The Logic to calculate the current step
                   Builder(
                     builder: (context) {
                       String status = _trackedOrder!['status'] ?? 'Processed';
@@ -935,7 +889,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             ],
                           ),
                           const SizedBox(height: 32),
-                          // Dynamic Status Message
                           Container(
                             width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
                             child: Row(
@@ -964,7 +917,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Helper widget for the animated circles
   Widget _buildTrackingNode(IconData icon, String label, bool isActive, Color activeColor) {
     return Column(
       children: [
@@ -975,7 +927,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Helper widget for the connecting lines
   Widget _buildTrackingLine(bool isActive) {
     return Expanded(child: AnimatedContainer(duration: const Duration(milliseconds: 500), height: 4, margin: const EdgeInsets.only(bottom: 24), color: isActive ? Colors.green : Colors.grey[300]));
   }
@@ -998,12 +949,11 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       );
     }
     
-    if (errorMessage.isNotEmpty) return SliverToBoxAdapter(child: Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 18)))));
+    if (errorMessage.isNotEmpty) return Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 18))));
 
     return CustomScrollView(
       controller: _mainScrollController,
       slivers: [
-        // Dynamic Banners with Floating Search Card (Web)
         SliverToBoxAdapter(
           child: Stack(
             clipBehavior: Clip.none, 
@@ -1067,7 +1017,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     ),
               ),
               
-              // Floating Search Box ONLY for Desktop Web
               if (isDesktop)
                 Positioned(
                   bottom: -40, 
@@ -1124,10 +1073,8 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
         ),
         
-        // Adds a spacer to make room for the floating box on web
         if (isDesktop) const SliverToBoxAdapter(child: SizedBox(height: 60)),
         
-        // Hide the Mobile Action Buttons if on Desktop (since they are in the header now)
         if (!isDesktop) 
           SliverToBoxAdapter(
             child: Padding(
@@ -1812,7 +1759,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     setState(() => _isLoading = true);
     try {
-      // FIXED: Removed trailing slash
       final response = await http.post(
         Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/login'), 
         body: {'username': _phoneController.text, 'password': _passwordController.text}
@@ -1920,7 +1866,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // FIXED: Removed trailing slash
       final response = await http.post(
         Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/register'),
         headers: {'Content-Type': 'application/json'},
@@ -2060,28 +2005,22 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Because we are sending an Image AND Text, we use a MultipartRequest
-      // FIXED: Removed trailing slash
       var request = http.MultipartRequest('POST', Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/prescriptions/upload'));
       
-      // Attach the text data
       request.fields['patient_name'] = _nameController.text;
       request.fields['phone_number'] = _phoneController.text;
       request.fields['delivery_address'] = _addressController.text;
 
-      // Attach the image file safely for both Web and Mobile
       var imageBytes = await _selectedImage!.readAsBytes();
       var multipartFile = http.MultipartFile.fromBytes('prescription_image', imageBytes, filename: _selectedImage!.name);
       request.files.add(multipartFile);
 
-      // Send to Django
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
       setState(() => _isLoading = false);
 
       if (response.statusCode == 201) {
-        // Success! Go back to the shop
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prescription securely sent to our Pharmacists!'), backgroundColor: Colors.green));
           Navigator.pop(context); 
@@ -2155,7 +2094,6 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
                   const Text('2. Attach Doctor\'s Note', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
                   const SizedBox(height: 16),
                   
-                  // Image Picker Box
                   GestureDetector(
                     onTap: _pickImage,
                     child: Container(
@@ -2222,21 +2160,18 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
   }
 
   Future<void> _runSimulation() async {
-    // Step 1: Connecting
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) setState(() {
       statusMessage = "Sending STK Push to your phone...";
       currentIcon = Icons.smartphone;
     });
 
-    // Step 2: Waiting for User PIN
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) setState(() {
       statusMessage = "Please enter your M-PESA PIN...";
       currentIcon = Icons.dialpad;
     });
 
-    // Step 3: Payment Confirmed!
     await Future.delayed(const Duration(milliseconds: 3500));
     if (mounted) setState(() {
       statusMessage = "Payment Received Successfully!";
@@ -2244,7 +2179,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
       isProcessing = false;
     });
 
-    // Step 4: Close the dialog and trigger the Django API
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) {
       Navigator.pop(context); 
@@ -2264,7 +2198,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Bouncing/Changing M-Pesa Icon
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
@@ -2279,11 +2212,9 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
             const Text('M-PESA Express', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50))),
             const SizedBox(height: 24),
             
-            // Loading Spinner (Hides when done)
             if (isProcessing) const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50))),
             if (isProcessing) const SizedBox(height: 24),
             
-            // Dynamic Status Text
             Text(statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
           ],
         ),
