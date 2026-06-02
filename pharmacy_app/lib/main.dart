@@ -379,9 +379,11 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   Future<void> _showPaymentDialog() async {
     if (!isLoggedIn) {
       _showTopSnackbar('Please log in to checkout!', color: Colors.orange);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((_) {
-        setState(() => isLoggedIn = true);
-        fetchOrders();
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((success) {
+        if (success == true) { 
+          setState(() => isLoggedIn = true);
+          fetchOrders();
+        }
       });
       return;
     }
@@ -600,8 +602,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                       icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : Colors.black87, size: 28),
                       onPressed: () {
                         if (!isLoggedIn) {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((_) {
-                            setState(() => isLoggedIn = true); fetchOrders();
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((success) {
+                            if (success == true) {
+                              setState(() => isLoggedIn = true); fetchOrders();
+                            }
                           });
                         } else {
                           setState(() => _currentScreen = 'dashboard'); 
@@ -708,8 +712,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               TextButton.icon(
                 onPressed: () {
                   if (!isLoggedIn) {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((_) {
-                      setState(() => isLoggedIn = true); fetchOrders();
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((success) {
+                      if (success == true) {
+                        setState(() => isLoggedIn = true); fetchOrders();
+                      }
                     });
                   }
                 },
@@ -1762,7 +1768,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       setState(() => _isLoading = false);
       if (response.statusCode == 200) {
-        Navigator.pop(context); 
+        Navigator.pop(context, true); // FIXED: Only returns 'true' when login is successful!
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Admin Access Granted!'), backgroundColor: Colors.green));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials.'), backgroundColor: Colors.red));
