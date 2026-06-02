@@ -70,6 +70,12 @@ class VendorProfile(models.Model):
     national_id = models.CharField(max_length=50)
     ppb_license = models.CharField(max_length=100)
     county_license = models.CharField(max_length=100)
+    
+    # ==========================================
+    # ⚠️ NEW: POS Access Toggle
+    # ==========================================
+    has_pos_access = models.BooleanField(default=False, help_text="Can this vendor use the POS system?")
+    
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -83,7 +89,7 @@ class VendorProfile(models.Model):
                 if self.email:
                     send_mail(
                         subject='Your PharmaStore Account is Verified!',
-                        message=f'Hello {self.pharmacy_name},\n\nGreat news! Your PPB and County licenses have been verified. You can now log in to the PharmaStore Vendor Portal and start managing your inventory and POS.\n\nWelcome to the team!',
+                        message=f'Hello {self.pharmacy_name},\n\nGreat news! Your PPB and County licenses have been verified. You can now log in to the PharmaStore Vendor Portal.\n\nPOS Access Granted: {"Yes" if self.has_pos_access else "No"}\n\nWelcome to the team!',
                         from_email=settings.EMAIL_HOST_USER,
                         recipient_list=[self.email],
                         fail_silently=False,
@@ -94,7 +100,8 @@ class VendorProfile(models.Model):
 
     def __str__(self):
         status = "✅ Approved" if self.is_approved else "⏳ Pending"
-        return f"{self.pharmacy_name} - {status}"
+        pos = "💻 POS Enabled" if self.has_pos_access else "🚫 No POS"
+        return f"{self.pharmacy_name} - {status} | {pos}"
 
 
 # ==========================================
