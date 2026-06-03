@@ -97302,7 +97302,7 @@ s=q}for(;;)switch(s){case 0:o.Y(new B.asC(o))
 q=3
 k=t.N
 s=6
-return B.N(B.aFy(B.ex("https://pharmastore-backend-jmcl.onrender.com/api/login"),B.ac(["username",o.d.a.a,"password",o.e.a.a],k,k),null),$async$zq)
+return B.N(B.aFy(B.ex("https://pharmastore-backend-jmcl.onrender.com/api/login/"),B.ac(["username",o.d.a.a,"password",o.e.a.a],k,k),null),$async$zq)
 case 6:n=b
 o.Y(new B.asD(o))
 if(n.b===200){j=n

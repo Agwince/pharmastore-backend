@@ -1705,7 +1705,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await http.post(
-        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/login'), 
+         Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/login/'),
         body: {'username': _phoneController.text, 'password': _passwordController.text}
       );
       setState(() => _isLoading = false);
