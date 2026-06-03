@@ -189,17 +189,24 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     }
   }
 
-  void _applyFilters() {
+  void _applyFilters([String? explicitQuery]) {
     setState(() {
+      String activeSearch = explicitQuery ?? _searchController.text;
+      
       filteredMedicines = medicines.where((med) {
-        final matchesSearch = med['name'].toString().toLowerCase().contains(_searchController.text.toLowerCase());
+        final name = med['name'].toString().toLowerCase();
+        final matchesSearch = name.contains(activeSearch.toLowerCase());
         final matchesCategory = _selectedCategory == 'All' || med['category'] == _selectedCategory;
         return matchesSearch && matchesCategory;
       }).toList();
     });
   }
 
-  void _filterSearch(String query) => _applyFilters();
+  void _filterSearch(String query) {
+    _applyFilters(query);
+  }
+
+
 
   void _setCategory(String categoryName) {
     setState(() {
@@ -699,7 +706,13 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           InkWell(
-            onTap: () => setState(() => _currentScreen = 'shop'),
+            onTap: () {
+              setState(() {
+                _searchController.clear();
+                _currentScreen = 'shop';
+                _applyFilters();
+              });
+            },
             child: Row(
               children: [
                 Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 24)),
@@ -720,7 +733,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   }
                 },
                 icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : const Color(0xFF003876)),
-                label: Text(isLoggedIn ? 'Admin' : 'Login', style: TextStyle(color: isLoggedIn ? Colors.green : const Color(0xFF003876), fontWeight: FontWeight.bold, fontSize: 16)),
+                label: Text(isLoggedIn ? 'Vendor' : 'Login', style: TextStyle(color: isLoggedIn ? Colors.green : const Color(0xFF003876), fontWeight: FontWeight.bold, fontSize: 16)),
               ),
               const SizedBox(width: 16),
               TweenAnimationBuilder(
@@ -742,8 +755,31 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           child: TextField(
-            controller: _searchController, onChanged: _filterSearch,
-            decoration: InputDecoration(hintText: 'Search 50,000+ medical items', filled: true, fillColor: Colors.grey[100], prefixIcon: const Icon(Icons.search, color: Colors.grey), contentPadding: const EdgeInsets.symmetric(vertical: 0), border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)),
+            controller: _searchController, 
+            onChanged: _filterSearch,
+            onSubmitted: (value) {
+              _filterSearch(value);
+              FocusScope.of(context).unfocus(); // Closes the mobile keyboard
+            },
+            textInputAction: TextInputAction.search, // Adds the magnifying glass to the keyboard
+            decoration: InputDecoration(
+              hintText: 'Search 50,000+ medical items', 
+              filled: true, 
+              fillColor: Colors.grey[100], 
+              prefixIcon: const Icon(Icons.search, color: Colors.grey), 
+              suffixIcon: _searchController.text.isNotEmpty 
+                  ? IconButton(
+                      icon: const Icon(Icons.cancel, color: Colors.grey), 
+                      onPressed: () {
+                        _searchController.clear();
+                        _filterSearch('');
+                        FocusScope.of(context).unfocus();
+                      }
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(vertical: 0), 
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)
+            ),
           ),
         ),
       ),
@@ -952,266 +988,247 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     
     if (errorMessage.isNotEmpty) return Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 18))));
 
+    // ⚠️ THE MAGIC TRIGGER: Is the user currently typing a search?
+    bool isSearching = _searchController.text.trim().isNotEmpty;
+
     return CustomScrollView(
       controller: _mainScrollController,
       slivers: [
-        SliverToBoxAdapter(
-          child: Stack(
-            clipBehavior: Clip.none, 
-            alignment: Alignment.bottomCenter,
-            children: [
-              SizedBox(
-                height: isDesktop ? 350 : 220, 
-                child: promoBanners.isEmpty 
-                  ? const Center(child: Text('No active promos', style: TextStyle(color: Colors.grey)))
-                  : PageView.builder(
-                      controller: _bannerController,
-                      itemCount: promoBanners.length,
-                      itemBuilder: (context, index) {
-                        final banner = promoBanners[index];
-                        
-                        int parseColor(dynamic c, int fallback) {
-                          if (c == null) return fallback;
-                          if (c is int) return c;
-                          if (c is String && c.startsWith('0x')) return int.tryParse(c) ?? fallback;
-                          return fallback;
-                        }
-                        
-                        final color1 = Color(parseColor(banner['color1'], 0xFF003876));
-                        final color2 = Color(parseColor(banner['color2'], 0xFF0056b3));
-                        
-                        String? bannerImageUrl = banner['image'] != null ? (banner['image'].toString().startsWith('http') ? banner['image'] : 'https://pharmastore-backend-jmcl.onrender.com${banner['image']}') : null;
+        
+        // ONLY show Banners and Categories if the search bar is EMPTY
+        if (!isSearching) ...[
+          SliverToBoxAdapter(
+            child: Stack(
+              clipBehavior: Clip.none, 
+              alignment: Alignment.bottomCenter,
+              children: [
+                SizedBox(
+                  height: isDesktop ? 350 : 220, 
+                  child: promoBanners.isEmpty 
+                    ? const Center(child: Text('No active promos', style: TextStyle(color: Colors.grey)))
+                    : PageView.builder(
+                        controller: _bannerController,
+                        itemCount: promoBanners.length,
+                        itemBuilder: (context, index) {
+                          final banner = promoBanners[index];
+                          int parseColor(dynamic c, int fallback) {
+                            if (c == null) return fallback;
+                            if (c is int) return c;
+                            if (c is String && c.startsWith('0x')) return int.tryParse(c) ?? fallback;
+                            return fallback;
+                          }
+                          final color1 = Color(parseColor(banner['color1'], 0xFF003876));
+                          final color2 = Color(parseColor(banner['color2'], 0xFF0056b3));
+                          String? bannerImageUrl = banner['image'] != null ? (banner['image'].toString().startsWith('http') ? banner['image'] : 'https://pharmastore-backend-jmcl.onrender.com${banner['image']}') : null;
 
-                        return AnimatedBuilder(
-                          animation: _bannerController,
-                          builder: (context, child) {
-                            double value = 1.0;
-                            if (_bannerController.position.haveDimensions) {
-                              value = _bannerController.page! - index;
-                              value = (1 - (value.abs() * 0.2)).clamp(0.8, 1.0); 
-                            }
-                            return Center(
-                              child: SizedBox(
-                                height: Curves.easeOut.transform(value) * (isDesktop ? 350 : 220), 
-                                width: Curves.easeOut.transform(value) * MediaQuery.of(context).size.width, 
-                                child: child
+                          return AnimatedBuilder(
+                            animation: _bannerController,
+                            builder: (context, child) {
+                              double value = 1.0;
+                              if (_bannerController.position.haveDimensions) {
+                                value = _bannerController.page! - index;
+                                value = (1 - (value.abs() * 0.2)).clamp(0.8, 1.0); 
+                              }
+                              return Center(
+                                child: SizedBox(
+                                  height: Curves.easeOut.transform(value) * (isDesktop ? 350 : 220), 
+                                  width: Curves.easeOut.transform(value) * MediaQuery.of(context).size.width, 
+                                  child: child
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: EdgeInsets.symmetric(horizontal: isDesktop ? 0 : 8, vertical: isDesktop ? 0 : 16),
+                              padding: const EdgeInsets.all(32),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(isDesktop ? 0 : 20), 
+                                image: bannerImageUrl != null ? DecorationImage(image: NetworkImage(bannerImageUrl), fit: BoxFit.cover) : null,
+                                gradient: bannerImageUrl == null ? LinearGradient(colors: [color1, color2], begin: Alignment.topLeft, end: Alignment.bottomRight) : null, 
+                                boxShadow: isDesktop ? [] : [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5))],
+                                color: const Color(0xFFFFC0CB), 
                               ),
-                            );
-                          },
-                          child: Container(
-                            margin: EdgeInsets.symmetric(horizontal: isDesktop ? 0 : 8, vertical: isDesktop ? 0 : 16),
-                            padding: const EdgeInsets.all(32),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(isDesktop ? 0 : 20), 
-                              image: bannerImageUrl != null ? DecorationImage(image: NetworkImage(bannerImageUrl), fit: BoxFit.cover) : null,
-                              gradient: bannerImageUrl == null ? LinearGradient(colors: [color1, color2], begin: Alignment.topLeft, end: Alignment.bottomRight) : null, 
-                              boxShadow: isDesktop ? [] : [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5))],
-                              color: const Color(0xFFFFC0CB), 
+                              child: bannerImageUrl == null ? Stack(children: [
+                                Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(banner['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, height: 1.2)), const SizedBox(height: 12), Text(banner['subtitle'] ?? '', style: const TextStyle(color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))]),
+                                Positioned(top: 0, right: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)), child: Text(banner['badge'] ?? 'PROMO', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black))))
+                              ]) : const SizedBox.shrink(), 
                             ),
-                            child: bannerImageUrl == null ? Stack(children: [
-                              Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(banner['title'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, height: 1.2)), const SizedBox(height: 12), Text(banner['subtitle'] ?? '', style: const TextStyle(color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))]),
-                              Positioned(top: 0, right: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)), child: Text(banner['badge'] ?? 'PROMO', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black))))
-                            ]) : const SizedBox.shrink(), 
-                          ),
-                        );
-                      },
-                    ),
-              ),
-              
-              if (isDesktop)
-                Positioned(
-                  bottom: -40, 
-                  child: Container(
-                    width: 600,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))]
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("What Are You Looking For?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            TextButton.icon(
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrescriptionUploadScreen())), 
-                              icon: const Icon(Icons.receipt_long, color: Colors.green), 
-                              label: const Text("Order With Prescription", style: TextStyle(color: Colors.green))
-                            )
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _searchController, 
-                          onChanged: _filterSearch, 
-                          onSubmitted: (value) => _filterSearch(value), 
-                          decoration: InputDecoration(
-                            hintText: 'Search for Medication & Products.', 
-                            filled: true, 
-                            fillColor: Colors.grey[100], 
-                            suffixIcon: Container(
-                              margin: const EdgeInsets.all(4), 
-                              decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(30)), 
-                              child: IconButton(
-                                icon: const Icon(Icons.search, color: Colors.white), 
-                                onPressed: () {
-                                  _filterSearch(_searchController.text);
-                                  _showTopSnackbar('Searching...', color: Colors.green);
-                                }
+                          );
+                        },
+                      ),
+                ),
+                
+                if (isDesktop)
+                  Positioned(
+                    bottom: -40, 
+                    child: Container(
+                      width: 600,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))]),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text("What Are You Looking For?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              TextButton.icon(
+                                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrescriptionUploadScreen())), 
+                                icon: const Icon(Icons.receipt_long, color: Colors.green), 
+                                label: const Text("Order With Prescription", style: TextStyle(color: Colors.green))
                               )
-                            ),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _searchController, 
+                            onChanged: _filterSearch, 
+                            onSubmitted: (value) => _filterSearch(value), 
+                            decoration: InputDecoration(
+                              hintText: 'Search for Medication & Products.', 
+                              filled: true, 
+                              fillColor: Colors.grey[100], 
+                              suffixIcon: Container(
+                                margin: const EdgeInsets.all(4), 
+                                decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(30)), 
+                                child: IconButton(
+                                  icon: const Icon(Icons.search, color: Colors.white), 
+                                  onPressed: () { _filterSearch(_searchController.text); FocusScope.of(context).unfocus(); }
+                                )
+                              ),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
+          
+          if (isDesktop) const SliverToBoxAdapter(child: SizedBox(height: 60)),
+          
+          if (!isDesktop) 
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(vertical: 16)),
+                        onPressed: () => _showTopSnackbar('Telehealth coming soon!', color: Colors.blue), 
+                        child: const Text("Speak to Doctor", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))
+                      )
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF65B741), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(vertical: 16)),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrescriptionUploadScreen())), 
+                        child: const Text("Upload Rx", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))
+                      )
+                    ),
+                  ]
+                )
+              )
+            ),
+
+          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0), child: Text('Top Categories', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 130,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final cat = categories[index];
+                  bool isSelected = _selectedCategory == cat['name'];
+                  return GestureDetector(
+                    onTap: () => _setCategory(cat['name']), 
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: SizedBox(
+                        width: 90, 
+                        child: Column(
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: 80, height: 80, 
+                              decoration: BoxDecoration(color: isSelected ? const Color(0xFFE91E63) : Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]), 
+                              child: Icon(cat['icon'], color: isSelected ? Colors.white : const Color(0xFFE91E63), size: 40)
+                            ),
+                            const SizedBox(height: 8), 
+                            Text(cat['name'], textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, color: const Color(0xFF003876))),
+                          ]
+                        )
+                      ),
+                    ),
+                  );
+                }
+              ),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('Health Bundles & Offers', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+          SliverToBoxAdapter(
+            child: Container(
+              height: 280, color: const Color(0xFF90B4CE).withOpacity(0.2), 
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(24), itemCount: filteredMedicines.length > 5 ? 5 : filteredMedicines.length,
+                itemBuilder: (context, index) {
+                  final med = filteredMedicines[index];
+                  String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'https://pharmastore-backend-jmcl.onrender.com${med['image']}') : null;
+
+                  return GestureDetector(
+                    onTap: () => _showProductDetails(med, heroTag: 'med_image_${med['id']}'), 
+                    child: Container(
+                      width: 180, margin: const EdgeInsets.only(right: 16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[300]!)),
+                      child: Stack(children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0), 
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start, 
+                            children: [
+                              Expanded(flex: 3, child: Center(child: Hero(tag: 'med_image_${med['id']}', child: imageUrl != null ? Image.network(imageUrl, fit: BoxFit.contain) : const Icon(Icons.medication, color: Colors.grey, size: 60)))),
+                              const SizedBox(height: 12), Text(med['name'].toString(), style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 8), 
+                              if (med['is_on_offer'] == true) 
+                                Text('KES ${(double.parse(med['price'].toString()) * (1 + (med['discount_percentage'] / 100))).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, decoration: TextDecoration.lineThrough, color: Colors.grey)),
+                              Text('KES ${med['price']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                            ]
+                          )
+                        ),
+                        Positioned(top: 8, right: 8, child: GestureDetector(onTap: () => _toggleWishlist(med), child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)), child: Icon(wishlist.any((item) => item['id'] == med['id']) ? Icons.favorite : Icons.favorite_border, color: const Color(0xFFE91E63), size: 20)))),
+                        if (med['is_on_offer'] == true && med['discount_percentage'] != null && med['discount_percentage'] > 0)
+                          Positioned(top: 0, left: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: const BoxDecoration(color: Colors.red, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))), child: Text('${med['discount_percentage']}% OFF', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))),
+                        Positioned(bottom: 12, right: 12, child: GestureDetector(onTap: () => _addToCart(med, isPos: false), child: Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF003876)), padding: const EdgeInsets.all(8.0), child: const Icon(Icons.add, color: Colors.white, size: 24)))),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('All Medical Products', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
         
-        if (isDesktop) const SliverToBoxAdapter(child: SizedBox(height: 60)),
-        
-        if (!isDesktop) 
+        ] else ...[
+          // IF SEARCHING: Show a clean results header instead of the banners!
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 8.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(vertical: 16)),
-                      onPressed: () => _showTopSnackbar('Telehealth coming soon!', color: Colors.blue), 
-                      child: const Text("Speak to Doctor", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))
-                    )
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF65B741), foregroundColor: Colors.white, shape: const StadiumBorder(), padding: const EdgeInsets.symmetric(vertical: 16)),
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrescriptionUploadScreen())), 
-                      child: const Text("Upload Rx", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))
-                    )
-                  ),
+                  const Text('Search Results', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
+                  Text('${filteredMedicines.length} found', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))
                 ]
               )
             )
           ),
+        ],
 
-        const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0), child: Text('Top Categories', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 130,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final cat = categories[index];
-                bool isSelected = _selectedCategory == cat['name'];
-                
-                return GestureDetector(
-                  onTap: () => _setCategory(cat['name']), 
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: SizedBox(
-                      width: 90, 
-                      child: Column(
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            width: 80, height: 80, 
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFE91E63) : Colors.white, 
-                              borderRadius: BorderRadius.circular(16), 
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]
-                            ), 
-                            child: Icon(cat['icon'], color: isSelected ? Colors.white : const Color(0xFFE91E63), size: 40)
-                          ),
-                          const SizedBox(height: 8), 
-                          Text(cat['name'], textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, color: const Color(0xFF003876))),
-                        ]
-                      )
-                    ),
-                  ),
-                );
-              }
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('Health Bundles & Offers', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
-        SliverToBoxAdapter(
-          child: Container(
-            height: 280, color: const Color(0xFF90B4CE).withOpacity(0.2), 
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(24), itemCount: filteredMedicines.length > 5 ? 5 : filteredMedicines.length,
-              itemBuilder: (context, index) {
-                final med = filteredMedicines[index];
-                String? imageUrl = med['image'] != null ? (med['image'].toString().startsWith('http') ? med['image'] : 'https://pharmastore-backend-jmcl.onrender.com${med['image']}') : null;
-
-                return GestureDetector(
-                  onTap: () => _showProductDetails(med, heroTag: 'med_image_${med['id']}'), 
-                  child: Container(
-                    width: 180, margin: const EdgeInsets.only(right: 16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[300]!)),
-                    child: Stack(children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0), 
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start, 
-                          children: [
-                            Expanded(flex: 3, child: Center(child: Hero(tag: 'med_image_${med['id']}', child: imageUrl != null ? Image.network(imageUrl, fit: BoxFit.contain) : const Icon(Icons.medication, color: Colors.grey, size: 60)))),
-                            const SizedBox(height: 12), Text(med['name'].toString(), style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14), maxLines: 2, overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 8), 
-                            if (med['is_on_offer'] == true) 
-                              Text('KES ${(double.parse(med['price'].toString()) * (1 + (med['discount_percentage'] / 100))).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, decoration: TextDecoration.lineThrough, color: Colors.grey)),
-                            Text('KES ${med['price']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                          ]
-                        )
-                      ),
-                      Positioned(
-                        top: 8, right: 8, 
-                        child: GestureDetector(
-                          onTap: () => _toggleWishlist(med), 
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)),
-                            child: Icon(
-                              wishlist.any((item) => item['id'] == med['id']) ? Icons.favorite : Icons.favorite_border, 
-                              color: const Color(0xFFE91E63), size: 20
-                            )
-                          )
-                        )
-                      ),
-                      if (med['is_on_offer'] == true && med['discount_percentage'] != null && med['discount_percentage'] > 0)
-                        Positioned(
-                          top: 0, left: 0, 
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
-                            decoration: const BoxDecoration(color: Colors.red, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))), 
-                            child: Text('${med['discount_percentage']}% OFF', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))
-                          )
-                        ),
-                      Positioned(
-                        bottom: 12, right: 12, 
-                        child: GestureDetector(
-                          onTap: () => _addToCart(med, isPos: false), 
-                          child: Container(
-                            decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF003876)), 
-                            padding: const EdgeInsets.all(8.0), 
-                            child: const Icon(Icons.add, color: Colors.white, size: 24)
-                          )
-                        )
-                      ),
-                    ]),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('All Medical Products', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+        // THE MAIN GRID (Always visible, filters instantly)
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           sliver: SliverGrid(
@@ -1241,40 +1258,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             ]
                           )
                         ),
-                        Positioned(
-                          top: 8, right: 8, 
-                          child: GestureDetector(
-                            onTap: () => _toggleWishlist(med), 
-                          child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)),
-                              child: Icon(
-                                wishlist.any((item) => item['id'] == med['id']) ? Icons.favorite : Icons.favorite_border, 
-                                color: const Color(0xFFE91E63), size: 20
-                              )
-                            )
-                          )
-                        ),
+                        Positioned(top: 8, right: 8, child: GestureDetector(onTap: () => _toggleWishlist(med), child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)), child: Icon(wishlist.any((item) => item['id'] == med['id']) ? Icons.favorite : Icons.favorite_border, color: const Color(0xFFE91E63), size: 20)))),
                         if (med['is_on_offer'] == true && med['discount_percentage'] != null && med['discount_percentage'] > 0)
-                          Positioned(
-                            top: 0, left: 0, 
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), 
-                              decoration: const BoxDecoration(color: Colors.red, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))), 
-                              child: Text('${med['discount_percentage']}% OFF', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))
-                            )
-                          ),
-                        Positioned(
-                          bottom: 12, right: 12, 
-                          child: GestureDetector(
-                            onTap: () => _addToCart(med, isPos: false), 
-                            child: Container(
-                              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF003876)), 
-                              padding: const EdgeInsets.all(8.0), 
-                              child: const Icon(Icons.add, color: Colors.white, size: 24)
-                            )
-                          )
-                        ),
+                          Positioned(top: 0, left: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: const BoxDecoration(color: Colors.red, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))), child: Text('${med['discount_percentage']}% OFF', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))),
+                        Positioned(bottom: 12, right: 12, child: GestureDetector(onTap: () => _addToCart(med, isPos: false), child: Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF003876)), padding: const EdgeInsets.all(8.0), child: const Icon(Icons.add, color: Colors.white, size: 24)))),
                       ],
                     ),
                   ),
@@ -1293,60 +1280,16 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceAround, 
                 children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, 
-                    children: [
-                      Text('Customer Service', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
-                      SizedBox(height: 16), 
-                      Text('Service and Warranty', style: TextStyle(color: Colors.white70)), 
-                      SizedBox(height: 8), 
-                      Text('Returns and Exchanges', style: TextStyle(color: Colors.white70)), 
-                      SizedBox(height: 8), 
-                      Text('Secured Online Payment', style: TextStyle(color: Colors.white70))
-                    ]
-                  ), 
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, 
-                    children: [
-                      Text('About PharmaStore', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
-                      SizedBox(height: 16), 
-                      Text('About Us', style: TextStyle(color: Colors.white70)), 
-                      SizedBox(height: 8), 
-                      Text('Pharmacy Locations', style: TextStyle(color: Colors.white70)), 
-                      SizedBox(height: 8), 
-                      Text('Health & Safety Policies', style: TextStyle(color: Colors.white70))
-                    ]
-                  ), 
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, 
-                    children: [
-                      const Text('Need Help?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), 
-                      SizedBox(height: 16), 
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
-                        decoration: BoxDecoration(color: const Color(0xFF003876), borderRadius: BorderRadius.circular(8)), 
-                        child: const Row(
-                          children: [
-                            Icon(Icons.phone, color: Colors.white), 
-                            SizedBox(width: 8), 
-                            Text('0800 221 322', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))
-                          ]
-                        )
-                      )
-                    ]
-                  )
+                  const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Customer Service', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 16), Text('Service and Warranty', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Returns and Exchanges', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Secured Online Payment', style: TextStyle(color: Colors.white70))]), 
+                  const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('About PharmaStore', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 16), Text('About Us', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Pharmacy Locations', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Health & Safety Policies', style: TextStyle(color: Colors.white70))]), 
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Need Help?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 16), Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), decoration: BoxDecoration(color: const Color(0xFF003876), borderRadius: BorderRadius.circular(8)), child: const Row(children: [Icon(Icons.phone, color: Colors.white), SizedBox(width: 8), Text('0800 221 322', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))]))])
                 ]
               )
             )
           ),
         if (isDesktop)
           SliverToBoxAdapter(
-            child: Container(
-              color: const Color(0xFF003876), padding: const EdgeInsets.all(16), 
-              child: const Center(
-                child: Text('© 2026 PharmaStore Kenya. All rights reserved.', style: TextStyle(color: Colors.white54))
-              )
-            )
+            child: Container(color: const Color(0xFF003876), padding: const EdgeInsets.all(16), child: const Center(child: Text('© 2026 PharmaStore Kenya. All rights reserved.', style: TextStyle(color: Colors.white54))))
           )
       ],
     );
