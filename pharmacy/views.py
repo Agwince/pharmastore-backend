@@ -1,11 +1,13 @@
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate # ⚠️ NEW: Required for custom login
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, parser_classes # ⚠️ NEW IMPORTS
-from rest_framework.parsers import MultiPartParser, FormParser # ⚠️ NEW IMPORTS
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.authtoken.models import Token # ⚠️ NEW: Required for custom login
 
-from .models import Medicine, Supplier, Order, VendorProfile, PromoBanner, Prescription # ⚠️ ADDED Prescription
-from .serializers import MedicineSerializer, SupplierSerializer, OrderSerializer, PromoBannerSerializer, PrescriptionSerializer # ⚠️ ADDED PrescriptionSerializer
+from .models import Medicine, Supplier, Order, VendorProfile, PromoBanner, Prescription
+from .serializers import MedicineSerializer, SupplierSerializer, OrderSerializer, PromoBannerSerializer, PrescriptionSerializer
 
 class MedicineViewSet(viewsets.ModelViewSet):
     queryset = Medicine.objects.all()
@@ -83,3 +85,37 @@ def upload_prescription(request):
         return Response({"message": "Prescription successfully sent to pharmacy!"}, status=201)
     else:
         return Response(serializer.errors, status=400)
+
+
+# ==========================================
+# ⚠️ UPGRADED: Vendor Login (Handles POS check dynamically)
+# ==========================================
+@api_view(['POST'])
+def vendor_login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    # 1. Authenticate checks if the password is correct
+    user = authenticate(username=username, password=password)
+    
+    if user is not None:
+        try:
+            vendor_profile = user.vendor_profile
+        except Exception:
+            return Response({'error': 'This user does not have a vendor profile.'}, status=400)
+            
+        # 2. ONLY block them if they are NOT approved
+        if not vendor_profile.is_approved:
+            return Response({'error': 'Account not verified or pending approval.'}, status=403)
+            
+        # 3. Create or get their login token
+        token, created = Token.objects.get_or_create(user=user)
+        
+        # 4. Let them in! Pass the pos_access flag to Flutter so the phone knows what to hide.
+        return Response({
+            'token': token.key,
+            'pharmacy_name': vendor_profile.pharmacy_name,
+            'has_pos_access': vendor_profile.has_pos_access
+        })
+    else:
+        return Response({'error': 'Invalid credentials'}, status=400)

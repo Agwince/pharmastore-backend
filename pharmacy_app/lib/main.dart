@@ -73,7 +73,8 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   bool isLoading = true;
   String errorMessage = '';
   String _currentScreen = 'shop'; 
-  bool isLoggedIn = false; 
+  bool isLoggedIn = false;
+  bool hasPosAccess = false; // ⚠️ NEW 
   
   String _selectedCategory = 'All';
 
@@ -386,12 +387,15 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   Future<void> _showPaymentDialog() async {
     if (!isLoggedIn) {
       _showTopSnackbar('Please log in to checkout!', color: Colors.orange);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((success) {
-        if (success == true) { 
-          setState(() => isLoggedIn = true);
-          fetchOrders();
-        }
-      });
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((result) {
+          if (result != null && result['loggedIn'] == true) {
+            setState(() {
+              isLoggedIn = true;
+              hasPosAccess = result['posAccess']; // ⚠️ Catches the POS status!
+            });
+            fetchOrders();
+          }
+        });
       return;
     }
     showDialog(
@@ -609,9 +613,13 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                       icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : Colors.black87, size: 28),
                       onPressed: () {
                         if (!isLoggedIn) {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((success) {
-                            if (success == true) {
-                              setState(() => isLoggedIn = true); fetchOrders();
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((result) {
+                            if (result != null && result['loggedIn'] == true) {
+                              setState(() {
+                                isLoggedIn = true;
+                                hasPosAccess = result['posAccess']; 
+                              });
+                              fetchOrders();
                             }
                           });
                         } else {
@@ -725,11 +733,15 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               TextButton.icon(
                 onPressed: () {
                   if (!isLoggedIn) {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((success) {
-                      if (success == true) {
-                        setState(() => isLoggedIn = true); fetchOrders();
-                      }
-                    });
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((result) {
+                            if (result != null && result['loggedIn'] == true) {
+                              setState(() {
+                                isLoggedIn = true;
+                                hasPosAccess = result['posAccess']; 
+                              });
+                              fetchOrders();
+                            }
+                          });
                   }
                 },
                 icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : const Color(0xFF003876)),
@@ -1379,11 +1391,25 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Vendor Dashboard', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003876), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                  onPressed: _generateAdminReport,
-                  icon: const Icon(Icons.download, color: Colors.white, size: 18),
-                  label: const Text('Export', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    // ⚠️ THE MAGIC CHECK: Only show this button if they have access!
+                    if (hasPosAccess == true) 
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                        onPressed: () => setState(() => _currentScreen = 'pos'),
+                        icon: const Icon(Icons.point_of_sale, color: Colors.white, size: 18),
+                        label: const Text('Open POS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    if (hasPosAccess == true) const SizedBox(width: 8), // Spacing
+                    
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003876), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                      onPressed: _generateAdminReport,
+                      icon: const Icon(Icons.download, color: Colors.white, size: 18),
+                      label: const Text('Export', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    )
+                  ],
                 )
               ],
             ),
@@ -1683,8 +1709,15 @@ class _LoginScreenState extends State<LoginScreen> {
         body: {'username': _phoneController.text, 'password': _passwordController.text}
       );
       setState(() => _isLoading = false);
+      
       if (response.statusCode == 200) {
-        Navigator.pop(context, true); 
+        // ⚠️ NEW: Decode the response and grab the pos status!
+        final data = json.decode(response.body);
+        bool posAccess = data['has_pos_access'] ?? false;
+        
+        // Pass BOTH the login success and the POS status back to the main screen
+        Navigator.pop(context, {'loggedIn': true, 'posAccess': posAccess}); 
+        
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vendor Access Granted!'), backgroundColor: Colors.green));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials or account not verified.'), backgroundColor: Colors.red));
