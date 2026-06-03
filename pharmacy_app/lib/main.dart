@@ -458,7 +458,9 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         body: json.encode({'items': itemsToProcess, 'payment_method': paymentMethod}), 
       );
       if (response.statusCode == 201) {
-        setState(() { if (isPos) posCart.clear(); else { cart.clear(); _currentScreen = 'dashboard'; } });
+        setState(() { if (isPos) {
+          posCart.clear();
+        } else { cart.clear(); _currentScreen = 'dashboard'; } });
         _showTopSnackbar(isPos ? 'Cash Sale Complete! Stock updated.' : 'Order successfully sent to Dispatch!', color: Colors.green);
         fetchMedicines(); 
         fetchOrders(); 
@@ -618,7 +620,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                       child: const Row(children: [Icon(Icons.flash_on, color: Colors.orange, size: 20), SizedBox(width: 8), Text("Express Delivery to\nNairobi", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))]),
                     ),
                     const SizedBox(width: 32),
@@ -891,7 +893,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           Container(
             constraints: const BoxConstraints(maxWidth: 500),
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))]),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 5))]),
             child: Row(
               children: [
                 Expanded(
@@ -927,7 +929,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             Container(
               constraints: const BoxConstraints(maxWidth: 600),
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blue.withOpacity(0.2)), boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))]),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blue.withValues(alpha: 0.2)), boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10))]),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -935,7 +937,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Order #${_trackedOrder!['id']}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), child: Text('KES ${_trackedOrder!['total_price']}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)), child: Text('KES ${_trackedOrder!['total_price']}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
                     ],
                   ),
                   const Divider(height: 32),
@@ -990,7 +992,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   Widget _buildTrackingNode(IconData icon, String label, bool isActive, Color activeColor) {
     return Column(
       children: [
-        AnimatedContainer(duration: const Duration(milliseconds: 500), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: isActive ? activeColor : Colors.grey[200], shape: BoxShape.circle, boxShadow: isActive ? [BoxShadow(color: activeColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))] : []), child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 28)),
+        AnimatedContainer(duration: const Duration(milliseconds: 500), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: isActive ? activeColor : Colors.grey[200], shape: BoxShape.circle, boxShadow: isActive ? [BoxShadow(color: activeColor.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 5))] : []), child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 28)),
         const SizedBox(height: 8),
         Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: isActive ? activeColor : Colors.grey)),
       ],
@@ -1077,7 +1079,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                                 borderRadius: BorderRadius.circular(isDesktop ? 0 : 20), 
                                 image: bannerImageUrl != null ? DecorationImage(image: NetworkImage(bannerImageUrl), fit: BoxFit.cover) : null,
                                 gradient: bannerImageUrl == null ? LinearGradient(colors: [color1, color2], begin: Alignment.topLeft, end: Alignment.bottomRight) : null, 
-                                boxShadow: isDesktop ? [] : [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5))],
+                                boxShadow: isDesktop ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 5))],
                                 color: const Color(0xFFFFC0CB), 
                               ),
                               child: bannerImageUrl == null ? Stack(children: [
@@ -1096,7 +1098,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     child: Container(
                       width: 600,
                       padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))]),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))]),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1194,51 +1196,51 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: Colors.grey[200]!),
                           ),
-                          child: Stack(
+                          // 👇 NEW CLEAN CARD LAYOUT 👇
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Icon(Icons.storefront, color: Color(0xFF003876), size: 30),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.star, color: Colors.orange, size: 16),
-                                            Text('${pharmacy['rating']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          ],
-                                        )
-                                      ],
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.storefront, color: Color(0xFF003876), size: 30),
+                                  // The OPEN/CLOSED Badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: pharmacy['isOpen'] ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    const Spacer(),
-                                    Text(pharmacy['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                    const SizedBox(height: 4),
-                                    Text('${pharmacy['distance']} away', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                                  ],
-                                ),
+                                    child: Text(
+                                      pharmacy['isOpen'] ? 'OPEN' : 'CLOSED',
+                                      style: TextStyle(
+                                        color: pharmacy['isOpen'] ? Colors.green : Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Positioned(
-                                top: 12,
-                                right: 12,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: pharmacy['isOpen'] ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    pharmacy['isOpen'] ? 'OPEN' : 'CLOSED',
-                                    style: TextStyle(
-                                      color: pharmacy['isOpen'] ? Colors.green : Colors.red,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ),
-                              )
+                              const Spacer(),
+                              Text(pharmacy['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('${pharmacy['distance']} away', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                  // The Star Rating (Moved to Bottom Right)
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star, color: Colors.orange, size: 14),
+                                      const SizedBox(width: 2),
+                                      Text('${pharmacy['rating']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ],
+                                  )
+                                ],
+                              ),
                             ],
                           ),
                         );
@@ -1271,7 +1273,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
                               width: 80, height: 80, 
-                              decoration: BoxDecoration(color: isSelected ? const Color(0xFFE91E63) : Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]), 
+                              decoration: BoxDecoration(color: isSelected ? const Color(0xFFE91E63) : Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]), 
                               child: Icon(cat['icon'], color: isSelected ? Colors.white : const Color(0xFFE91E63), size: 40)
                             ),
                             const SizedBox(height: 8), 
@@ -1289,7 +1291,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('Health Bundles & Offers', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
           SliverToBoxAdapter(
             child: Container(
-              height: 280, color: const Color(0xFF90B4CE).withOpacity(0.2), 
+              height: 280, color: const Color(0xFF90B4CE).withValues(alpha: 0.2), 
               child: ListView.builder(
                 scrollDirection: Axis.horizontal, padding: const EdgeInsets.all(24), itemCount: filteredMedicines.length > 5 ? 5 : filteredMedicines.length,
                 itemBuilder: (context, index) {
@@ -1445,7 +1447,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         ),
         Container(
           padding: const EdgeInsets.all(24), 
-          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]), 
+          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))]), 
           child: Column(
             children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Subtotal:', style: TextStyle(color: Colors.grey)), Text('KES $subTotal', style: const TextStyle(fontWeight: FontWeight.bold))]),
@@ -1530,7 +1532,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), border: Border.all(color: Colors.red.withOpacity(0.5)), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), border: Border.all(color: Colors.red.withValues(alpha: 0.5)), borderRadius: BorderRadius.circular(12)),
               child: Row(
                 children: [
                   const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
@@ -1605,7 +1607,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   flex: 1,
                   child: Container(
                     padding: const EdgeInsets.all(16), 
-                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withOpacity(0.3))), 
+                    decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withValues(alpha: 0.3))), 
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start, 
                       children: [
@@ -1688,7 +1690,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), 
               leading: Container(
                 padding: const EdgeInsets.all(12), 
-                decoration: BoxDecoration(color: badgeColor.withOpacity(0.1), shape: BoxShape.circle), 
+                decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.1), shape: BoxShape.circle), 
                 child: Icon(icon, color: badgeColor)
               ), 
               title: Text('Order #${order['id']} - ${order['quantity_sold']} Items', style: const TextStyle(fontWeight: FontWeight.bold)), 
@@ -1852,7 +1854,7 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 color: Colors.white, 
                 borderRadius: BorderRadius.circular(16), 
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))]
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))]
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1988,7 +1990,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             decoration: BoxDecoration(
               color: Colors.white, 
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))]
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))]
             ),
             child: Form(
               key: _formKey,
@@ -2121,7 +2123,7 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
             decoration: BoxDecoration(
               color: Colors.white, 
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))]
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))]
             ),
             child: Form(
               key: _formKey,
@@ -2131,7 +2133,7 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue.withOpacity(0.3))),
+                    decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue.withValues(alpha: 0.3))),
                     child: const Row(
                       children: [
                         Icon(Icons.security, color: Colors.blue),
@@ -2232,25 +2234,31 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
   Future<void> _runSimulation() async {
     // Step 1: Connecting
     await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       statusMessage = "Sending STK Push to your phone...";
       currentIcon = Icons.smartphone;
     });
+    }
 
     // Step 2: Waiting for User PIN
     await Future.delayed(const Duration(milliseconds: 2000));
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       statusMessage = "Please enter your M-PESA PIN...";
       currentIcon = Icons.dialpad;
     });
+    }
 
     // Step 3: Payment Confirmed!
     await Future.delayed(const Duration(milliseconds: 3500));
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       statusMessage = "Payment Received Successfully!";
       currentIcon = Icons.check_circle;
       isProcessing = false;
     });
+    }
 
     // Step 4: Close the dialog and trigger the Django API
     await Future.delayed(const Duration(milliseconds: 1500));
@@ -2279,7 +2287,7 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
               child: Container(
                 key: ValueKey<IconData>(currentIcon),
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(color: const Color(0xFF4CAF50).withOpacity(0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: const Color(0xFF4CAF50).withValues(alpha: 0.1), shape: BoxShape.circle),
                 child: Icon(currentIcon, size: 60, color: const Color(0xFF4CAF50)),
               ),
             ),
