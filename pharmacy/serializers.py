@@ -4,7 +4,8 @@ from .models import Medicine, Supplier, Order, VendorProfile, PromoBanner, Presc
 class MedicineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medicine
-        fields = '__all__'  # This tells it to grab every single column
+        # ⚠️ MAGIC: Grabs every column, including 'is_on_offer' and 'discount_percentage'
+        fields = '__all__'  
 
 class SupplierSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,8 +23,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class VendorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorProfile
-        # ⚠️ MAGIC: Because of '__all__', the new 'email' field 
-        # is automatically included and ready to receive data from Flutter!
+        # ⚠️ MAGIC: Automatically includes the new 'email' and 'has_pos_access' fields!
         fields = '__all__'
 
 # ==========================================

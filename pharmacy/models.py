@@ -86,14 +86,18 @@ class VendorProfile(models.Model):
             
             # 2. If they were NOT approved before, but they ARE approved now, send the email!
             if not old_profile.is_approved and self.is_approved:
-                if self.email:
-                    send_mail(
-                        subject='Your PharmaStore Account is Verified!',
-                        message=f'Hello {self.pharmacy_name},\n\nGreat news! Your PPB and County licenses have been verified. You can now log in to the PharmaStore Vendor Portal.\n\nPOS Access Granted: {"Yes" if self.has_pos_access else "No"}\n\nWelcome to the team!',
-                        from_email=settings.EMAIL_HOST_USER,
-                        recipient_list=[self.email],
-                        fail_silently=False,
-                    )
+                
+                # ⚠️ TEMPORARILY DISABLED TO PREVENT CRASH DURING DEMO
+                print(f"Vendor {self.pharmacy_name} approved! (Email skipped)")
+                
+                # if self.email:
+                #     send_mail(
+                #         subject='Your PharmaStore Account is Verified!',
+                #         message=f'Hello {self.pharmacy_name},\n\nGreat news! Your PPB and County licenses have been verified. You can now log in to the PharmaStore Vendor Portal.\n\nPOS Access Granted: {"Yes" if self.has_pos_access else "No"}\n\nWelcome to the team!',
+                #         from_email=settings.EMAIL_HOST_USER,
+                #         recipient_list=[self.email],
+                #         fail_silently=False,
+                #     )
         
         # 3. Save the actual record to the database
         super().save(*args, **kwargs)
