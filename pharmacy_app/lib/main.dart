@@ -66,6 +66,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   
   List<Map<String, dynamic>> cart = []; 
   List<Map<String, dynamic>> posCart = []; 
+
+  final List<Map<String, dynamic>> partnerPharmacies = [
+    {'name': 'MedPlus Chemist', 'isOpen': true, 'rating': 4.8, 'distance': '1.2 km'},
+    {'name': 'CareRX Pharmacy', 'isOpen': false, 'rating': 4.5, 'distance': '3.0 km'},
+    {'name': 'City Health', 'isOpen': true, 'rating': 4.9, 'distance': '5.5 km'},
+  ];
   
   List<dynamic> promoBanners = [];
   List<dynamic> wishlist = []; 
@@ -116,6 +122,13 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     _mainScrollController.dispose();
     _trackController.dispose();
     super.dispose();
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning ☀️';
+    if (hour < 17) return 'Good Afternoon 🌤️';
+    return 'Good Evening 🌙';
   }
 
   Future<void> _downloadAPK() async {
@@ -721,10 +734,18 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 _applyFilters();
               });
             },
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 24)),
-                const SizedBox(width: 12), const Text('PharmaStore', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFFE91E63))),
+                Text(_getGreeting(), style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.bold)),
+                Row(
+                  children: [
+                    Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 16)),
+                    const SizedBox(width: 8), 
+                    const Text('PharmaStore', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFFE91E63))),
+                  ],
+                ),
               ],
             ),
           ),
@@ -1145,6 +1166,90 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 )
               )
             ),
+            // --- THE NEW VENDOR MARKETPLACE UI ---
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text('Pharmacies Near You', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 140,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: partnerPharmacies.length,
+                      itemBuilder: (context, index) {
+                        final pharmacy = partnerPharmacies[index];
+                        return Container(
+                          width: 220,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Icon(Icons.storefront, color: Color(0xFF003876), size: 30),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.star, color: Colors.orange, size: 16),
+                                            Text('${pharmacy['rating']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                    const Spacer(),
+                                    Text(pharmacy['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    const SizedBox(height: 4),
+                                    Text('${pharmacy['distance']} away', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                              Positioned(
+                                top: 12,
+                                right: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: pharmacy['isOpen'] ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    pharmacy['isOpen'] ? 'OPEN' : 'CLOSED',
+                                    style: TextStyle(
+                                      color: pharmacy['isOpen'] ? Colors.green : Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
 
           const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0), child: Text('Top Categories', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
           SliverToBoxAdapter(
@@ -1309,8 +1414,19 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
 
   Widget _buildCartBody() {
     if (cart.isEmpty) return const Center(child: Text('Your cart is empty!', style: TextStyle(fontSize: 18, color: Colors.grey)));
-    double total = 0;
-    for (var item in cart) { total += double.parse(item['price'].toString()) * item['cart_quantity']; }
+    
+    double subTotal = 0;
+    for (var item in cart) { subTotal += double.parse(item['price'].toString()) * item['cart_quantity']; }
+
+    // --- SMART DELIVERY CALCULATION ---
+    double distanceKm = 4.5; // In production, grab this from a Map/Location Controller
+    double averageSpeedKmh = 10.0; // Bike courier speed
+    double pricePerKm = 30.0; // Base rate per KM
+    
+    double deliveryFee = distanceKm * pricePerKm;
+    int estimatedTimeMins = ((distanceKm / averageSpeedKmh) * 60).round();
+    double grandTotal = subTotal + deliveryFee;
+
     return Column(
       children: [
         Expanded(
@@ -1328,25 +1444,19 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           )
         ),
         Container(
-          padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]), 
+          padding: const EdgeInsets.all(24), 
+          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]), 
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-                children: [
-                  const Text('Total:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), 
-                  Text('KES $total', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876)))
-                ]
-              ), 
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Subtotal:', style: TextStyle(color: Colors.grey)), Text('KES $subTotal', style: const TextStyle(fontWeight: FontWeight.bold))]),
+              const SizedBox(height: 8),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('Delivery Fee ($distanceKm km):', style: const TextStyle(color: Colors.grey)), Text('KES $deliveryFee', style: const TextStyle(fontWeight: FontWeight.bold))]),
+              const SizedBox(height: 8),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Est. Delivery Time:', style: TextStyle(color: Colors.grey)), Text('~ $estimatedTimeMins mins', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold))]),
+              const Divider(height: 24),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('Grand Total:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), Text('KES $grandTotal', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876)))]), 
               const SizedBox(height: 16), 
-              SizedBox(
-                width: double.infinity, height: 50, 
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green), 
-                  onPressed: _showPaymentDialog, 
-                  child: const Text('Checkout & Dispatch Order', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold))
-                )
-              )
+              SizedBox(width: double.infinity, height: 50, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.green), onPressed: _showPaymentDialog, child: const Text('Checkout & Dispatch Order', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold))))
             ]
           )
         )
