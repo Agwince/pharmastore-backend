@@ -76,6 +76,16 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   // --- CREDIT SYSTEM VARIABLES ---
   double creditLimit = 5000.0; // We will fetch this from Django later!
   double currentDebt = 0.0;
+
+  // --- ORDER TRACKING VARIABLES ---
+  int currentTrackingStep = 2; // 0: Placed, 1: Packed, 2: Out for Delivery, 3: Delivered
+  
+  final List<Map<String, dynamic>> trackingSteps = [
+    {'title': 'Order Placed', 'subtitle': 'Waiting for vendor to confirm', 'icon': Icons.receipt_long},
+    {'title': 'Packed & Ready', 'subtitle': 'Vendor has prepared your items', 'icon': Icons.inventory_2},
+    {'title': 'Out for Delivery', 'subtitle': 'Rider is on the way to you', 'icon': Icons.delivery_dining},
+    {'title': 'Delivered', 'subtitle': 'Order completed successfully', 'icon': Icons.check_circle},
+  ];
   
   List<dynamic> promoBanners = [];
   List<dynamic> wishlist = []; 
@@ -1471,6 +1481,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
+  
   Widget _buildDashboardBody() {
     double totalRevenue = 0; 
     double pendingRevenue = 0; 
