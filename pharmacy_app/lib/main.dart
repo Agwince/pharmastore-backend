@@ -9,6 +9,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:image_picker/image_picker.dart'; 
 import 'package:url_launcher/url_launcher.dart'; 
+import 'package:geolocator/geolocator.dart'; // NEW: Added Geolocator
+import 'package:geocoding/geocoding.dart';   // NEW: Added Geocoding
 
 void main() {
   runApp(const PharmacyApp());
@@ -103,6 +105,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   bool hasPosAccess = false; 
   
   String _selectedCategory = 'All';
+  String _userLocation = 'Locating...'; // NEW: Variable for dynamic location
 
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _posSearchController = TextEditingController();
@@ -130,6 +133,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchRealLocation(); // NEW: Call location fetcher on startup
     fetchMedicines();
     fetchOrders(); 
     fetchBanners(); 
@@ -142,6 +146,38 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     _mainScrollController.dispose();
     _trackController.dispose();
     super.dispose();
+  }
+
+  // NEW: Function to grab real GPS coordinates and turn them into a city/neighborhood name
+  Future<void> _fetchRealLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() => _userLocation = 'Location disabled');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() => _userLocation = 'Permission denied');
+          return;
+        }
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      
+      if (placemarks.isNotEmpty) {
+        setState(() {
+          // This tries to get the local neighborhood first, falling back to city, then a default.
+          _userLocation = placemarks.first.subLocality ?? placemarks.first.locality ?? "Unknown Area";
+        });
+      }
+    } catch (e) {
+      setState(() => _userLocation = 'Location unavailable');
+    }
   }
 
   String _getGreeting() {
@@ -759,12 +795,13 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(_getGreeting(), style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w600)),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.location_on, color: Color(0xFFE91E63), size: 16),
-                    SizedBox(width: 4), 
-                    Text('Ongata Rongai', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF003876), letterSpacing: -0.5)),
-                    Icon(Icons.keyboard_arrow_down, color: Color(0xFF003876), size: 18)
+                    const Icon(Icons.location_on, color: Color(0xFFE91E63), size: 16),
+                    const SizedBox(width: 4), 
+                    // NEW: Uses the dynamic location variable instead of hardcoded string
+                    Text(_userLocation, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF003876), letterSpacing: -0.5)),
+                    const Icon(Icons.keyboard_arrow_down, color: Color(0xFF003876), size: 18)
                   ],
                 ),
               ],
@@ -1377,7 +1414,21 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                         Positioned(top: 8, right: 8, child: GestureDetector(onTap: () => _toggleWishlist(med), child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)), child: Icon(wishlist.any((item) => item['id'] == med['id']) ? Icons.favorite : Icons.favorite_border, color: const Color(0xFFE91E63), size: 20)))),
                         if (med['is_on_offer'] == true && med['discount_percentage'] != null && med['discount_percentage'] > 0)
                           Positioned(top: 0, left: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: const BoxDecoration(color: Colors.red, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))), child: Text('${med['discount_percentage']}% OFF', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))),
-                        Positioned(bottom: 12, right: 12, child: GestureDetector(onTap: () => _addToCart(med, isPos: false), child: Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF003876)), padding: const EdgeInsets.all(8.0), child: const Icon(Icons.add, color: Colors.white, size: 24)))),
+                        // NEW: Matched the floating corner button style from the main grid
+                        Positioned(
+                          bottom: 0, right: 0, 
+                          child: GestureDetector(
+                            onTap: () => _addToCart(med, isPos: false), 
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                borderRadius: BorderRadius.only(topLeft: Radius.circular(16), bottomRight: Radius.circular(12)), 
+                                color: Color(0xFF65B741)
+                              ), 
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+                              child: const Icon(Icons.add, color: Colors.white, size: 22)
+                            )
+                          )
+                        ),
                       ]),
                     ),
                   );
