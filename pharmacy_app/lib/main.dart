@@ -72,6 +72,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     {'name': 'CareRX Pharmacy', 'isOpen': false, 'rating': 4.5, 'distance': '3.0 km'},
     {'name': 'City Health', 'isOpen': true, 'rating': 4.9, 'distance': '5.5 km'},
   ];
+
+  // --- CREDIT SYSTEM VARIABLES ---
+  double creditLimit = 5000.0; // We will fetch this from Django later!
+  double currentDebt = 0.0;
   
   List<dynamic> promoBanners = [];
   List<dynamic> wishlist = []; 
@@ -741,11 +745,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(_getGreeting(), style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.bold)),
-                Row(
+                const Row(
                   children: [
-                    Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: const Color(0xFFE91E63), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.local_pharmacy, color: Colors.white, size: 16)),
-                    const SizedBox(width: 8), 
-                    const Text('PharmaStore', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFFE91E63))),
+                    Icon(Icons.location_on, color: Color(0xFFE91E63), size: 16),
+                    SizedBox(width: 4), 
+                    Text('Delivering to: Ongata Rongai', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF003876))),
+                    Icon(Icons.keyboard_arrow_down, color: Color(0xFF003876), size: 18)
                   ],
                 ),
               ],
