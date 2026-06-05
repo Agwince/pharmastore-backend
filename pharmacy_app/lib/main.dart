@@ -23,12 +23,20 @@ class PharmacyApp extends StatelessWidget {
       title: 'PharmaStore',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF003876),
-        scaffoldBackgroundColor: const Color(0xFFF2F5F8),
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF003876),
+          primary: const Color(0xFF003876),
+          secondary: const Color(0xFFE91E63),
+          tertiary: const Color(0xFF65B741),
+          surface: const Color(0xFFF4F7FC), // Premium cool-grey background
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF4F7FC),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Color(0xFF003876),
           elevation: 0,
+          scrolledUnderElevation: 0.5, 
         ),
       ),
       home: const StorefrontScreen(), 
@@ -73,12 +81,10 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     {'name': 'City Health', 'isOpen': true, 'rating': 4.9, 'distance': '5.5 km'},
   ];
 
-  // --- CREDIT SYSTEM VARIABLES ---
-  double creditLimit = 5000.0; // We will fetch this from Django later!
+  double creditLimit = 5000.0; 
   double currentDebt = 0.0;
 
-  // --- ORDER TRACKING VARIABLES ---
-  int currentTrackingStep = 2; // 0: Placed, 1: Packed, 2: Out for Delivery, 3: Delivered
+  int currentTrackingStep = 2; 
   
   final List<Map<String, dynamic>> trackingSteps = [
     {'title': 'Order Placed', 'subtitle': 'Waiting for vendor to confirm', 'icon': Icons.receipt_long},
@@ -94,7 +100,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   String errorMessage = '';
   String _currentScreen = 'shop'; 
   bool isLoggedIn = false;
-  bool hasPosAccess = false; // ⚠️ NEW 
+  bool hasPosAccess = false; 
   
   String _selectedCategory = 'All';
 
@@ -233,8 +239,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   void _filterSearch(String query) {
     _applyFilters(query);
   }
-
-
 
   void _setCategory(String categoryName) {
     setState(() {
@@ -418,7 +422,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           if (result != null && result['loggedIn'] == true) {
             setState(() {
               isLoggedIn = true;
-              hasPosAccess = result['posAccess']; // ⚠️ Catches the POS status!
+              hasPosAccess = result['posAccess']; 
             });
             fetchOrders();
           }
@@ -754,12 +758,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(_getGreeting(), style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.bold)),
+                Text(_getGreeting(), style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w600)),
                 const Row(
                   children: [
                     Icon(Icons.location_on, color: Color(0xFFE91E63), size: 16),
                     SizedBox(width: 4), 
-                    Text('Delivering to: Ongata Rongai', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF003876))),
+                    Text('Ongata Rongai', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF003876), letterSpacing: -0.5)),
                     Icon(Icons.keyboard_arrow_down, color: Color(0xFF003876), size: 18)
                   ],
                 ),
@@ -768,32 +772,43 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
           Row(
             children: [
-              TextButton.icon(
+              IconButton(
                 onPressed: () {
                   if (!isLoggedIn) {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())).then((result) {
-                            if (result != null && result['loggedIn'] == true) {
-                              setState(() {
-                                isLoggedIn = true;
-                                hasPosAccess = result['posAccess']; 
-                              });
-                              fetchOrders();
-                            }
-                          });
+                      if (result != null && result['loggedIn'] == true) {
+                        setState(() {
+                          isLoggedIn = true;
+                          hasPosAccess = result['posAccess']; 
+                        });
+                        fetchOrders();
+                      }
+                    });
+                  } else {
+                     setState(() => _currentScreen = 'dashboard'); 
                   }
                 },
-                icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? Colors.green : const Color(0xFF003876)),
-                label: Text(isLoggedIn ? 'Vendor' : 'Login', style: TextStyle(color: isLoggedIn ? Colors.green : const Color(0xFF003876), fontWeight: FontWeight.bold, fontSize: 16)),
+                icon: Icon(isLoggedIn ? Icons.account_circle : Icons.person_outline, color: isLoggedIn ? const Color(0xFF65B741) : const Color(0xFF003876), size: 28),
               ),
-              const SizedBox(width: 16),
-              TweenAnimationBuilder(
-                key: ValueKey(cart.length), tween: Tween<double>(begin: 0.7, end: 1.0), duration: const Duration(milliseconds: 500), curve: Curves.elasticOut, 
-                builder: (context, scale, child) { return Transform.scale(scale: scale, child: child); },
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF333333), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-                  onPressed: () => setState(() => _currentScreen = 'cart'),
-                  icon: const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
-                  label: Text(cart.length.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => setState(() => _currentScreen = 'cart'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF003876), Color(0xFF0056b3)]),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(color: const Color(0xFF003876).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))
+                    ]
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 20),
+                      const SizedBox(width: 6),
+                      Text(cart.length.toString(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -801,34 +816,47 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
         ],
       ),
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(70.0),
+        preferredSize: const Size.fromHeight(80.0),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          child: TextField(
-            controller: _searchController, 
-            onChanged: _filterSearch,
-            onSubmitted: (value) {
-              _filterSearch(value);
-              FocusScope.of(context).unfocus(); // Closes the mobile keyboard
-            },
-            textInputAction: TextInputAction.search, // Adds the magnifying glass to the keyboard
-            decoration: InputDecoration(
-              hintText: 'Search 50,000+ medical items', 
-              filled: true, 
-              fillColor: Colors.grey[100], 
-              prefixIcon: const Icon(Icons.search, color: Colors.grey), 
-              suffixIcon: _searchController.text.isNotEmpty 
-                  ? IconButton(
-                      icon: const Icon(Icons.cancel, color: Colors.grey), 
-                      onPressed: () {
-                        _searchController.clear();
-                        _filterSearch('');
-                        FocusScope.of(context).unfocus();
-                      }
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(vertical: 0), 
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 10))
+              ]
+            ),
+            child: TextField(
+              controller: _searchController, 
+              onChanged: _filterSearch,
+              onSubmitted: (value) {
+                _filterSearch(value);
+                FocusScope.of(context).unfocus();
+              },
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search medications, vitamins...', 
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
+                filled: true, 
+                fillColor: Colors.transparent, 
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.only(left: 16.0, right: 8.0),
+                  child: Icon(Icons.search, color: Color(0xFF003876), size: 24),
+                ), 
+                suffixIcon: _searchController.text.isNotEmpty 
+                    ? IconButton(
+                        icon: const Icon(Icons.cancel, color: Colors.grey), 
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterSearch('');
+                          FocusScope.of(context).unfocus();
+                        }
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16), 
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)
+              ),
             ),
           ),
         ),
@@ -837,18 +865,16 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   }
 
   Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed, 
-      selectedItemColor: Colors.green, 
-      unselectedItemColor: Colors.grey,
-      currentIndex: 0, 
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'WishList'),
-        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart_outlined), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
-      ],
-      onTap: (index) {
+    return NavigationBar(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      shadowColor: Colors.black.withOpacity(0.1),
+      elevation: 20,
+      indicatorColor: const Color(0xFF65B741).withOpacity(0.2),
+      selectedIndex: _currentScreen == 'shop' ? 0 
+                   : _currentScreen == 'wishlist' ? 1 
+                   : _currentScreen == 'cart' ? 2 : 3,
+      onDestinationSelected: (index) {
         if (index == 0) setState(() => _currentScreen = 'shop');
         if (index == 1) setState(() => _currentScreen = 'wishlist');
         if (index == 2) setState(() => _currentScreen = 'cart');
@@ -856,6 +882,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           setState(() => _currentScreen = isLoggedIn ? 'dashboard' : 'track'); 
         }
       },
+      destinations: const [
+        NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home, color: Color(0xFF65B741)), label: 'Home'),
+        NavigationDestination(icon: Icon(Icons.favorite_border), selectedIcon: Icon(Icons.favorite, color: Color(0xFF65B741)), label: 'Saved'),
+        NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart, color: Color(0xFF65B741)), label: 'Cart'),
+        NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard, color: Color(0xFF65B741)), label: 'Menu'),
+      ],
     );
   }
 
@@ -1038,14 +1070,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     
     if (errorMessage.isNotEmpty) return Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(errorMessage, style: const TextStyle(color: Colors.red, fontSize: 18))));
 
-    // ⚠️ THE MAGIC TRIGGER: Is the user currently typing a search?
     bool isSearching = _searchController.text.trim().isNotEmpty;
 
     return CustomScrollView(
       controller: _mainScrollController,
       slivers: [
         
-        // ONLY show Banners and Categories if the search bar is EMPTY
         if (!isSearching) ...[
           SliverToBoxAdapter(
             child: Stack(
@@ -1183,7 +1213,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 )
               )
             ),
-            // --- THE NEW VENDOR MARKETPLACE UI ---
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -1211,7 +1241,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: Colors.grey[200]!),
                           ),
-                          // 👇 NEW CLEAN CARD LAYOUT 👇
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1221,7 +1250,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Icon(Icons.storefront, color: Color(0xFF003876), size: 30),
-                                  // The OPEN/CLOSED Badge
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
@@ -1246,7 +1274,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('${pharmacy['distance']} away', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                                  // The Star Rating (Moved to Bottom Right)
                                   Row(
                                     children: [
                                       const Icon(Icons.star, color: Colors.orange, size: 14),
@@ -1267,13 +1294,19 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             ),
           ),
           
-
-          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0), child: Text('Top Categories', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0), 
+              child: Text('Top Categories', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: Color(0xFF003876)))
+            )
+          ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 130,
+              height: 120,
               child: ListView.builder(
-                scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), itemCount: categories.length,
+                scrollDirection: Axis.horizontal, 
+                padding: const EdgeInsets.symmetric(horizontal: 16), 
+                itemCount: categories.length,
                 itemBuilder: (context, index) {
                   final cat = categories[index];
                   bool isSelected = _selectedCategory == cat['name'];
@@ -1281,20 +1314,29 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     onTap: () => _setCategory(cat['name']), 
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: SizedBox(
-                        width: 90, 
-                        child: Column(
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: 80, height: 80, 
-                              decoration: BoxDecoration(color: isSelected ? const Color(0xFFE91E63) : Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]), 
-                              child: Icon(cat['icon'], color: isSelected ? Colors.white : const Color(0xFFE91E63), size: 40)
-                            ),
-                            const SizedBox(height: 8), 
-                            Text(cat['name'], textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600, color: const Color(0xFF003876))),
-                          ]
-                        )
+                      child: Column(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOutCubic,
+                            width: 72, height: 72, 
+                            decoration: BoxDecoration(
+                              gradient: isSelected ? const LinearGradient(colors: [Color(0xFFE91E63), Color(0xFFFF4081)], begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
+                              color: isSelected ? null : Colors.white, 
+                              borderRadius: BorderRadius.circular(22), 
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isSelected ? const Color(0xFFE91E63).withOpacity(0.4) : Colors.black.withOpacity(0.04), 
+                                  blurRadius: isSelected ? 15 : 10, 
+                                  offset: const Offset(0, 6)
+                                )
+                              ]
+                            ), 
+                            child: Icon(cat['icon'], color: isSelected ? Colors.white : const Color(0xFF003876), size: 32)
+                          ),
+                          const SizedBox(height: 10), 
+                          Text(cat['name'], textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600, color: isSelected ? const Color(0xFF003876) : Colors.grey.shade600)),
+                        ]
                       ),
                     ),
                   );
@@ -1344,29 +1386,35 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             ),
           ),
           
-          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('All Medical Products', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
-        
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), 
+              child: Text('All Medical Products', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: Color(0xFF003876)))
+            )
+          ),
         ] else ...[
-          // IF SEARCHING: Show a clean results header instead of the banners!
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Search Results', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
-                  Text('${filteredMedicines.length} found', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))
+                  const Text('Search Results', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF003876))),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(color: const Color(0xFF003876).withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                    child: Text('${filteredMedicines.length} found', style: const TextStyle(color: Color(0xFF003876), fontWeight: FontWeight.bold, fontSize: 13))
+                  )
                 ]
               )
             )
           ),
         ],
 
-        // THE MAIN GRID (Always visible, filters instantly)
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 220, childAspectRatio: 0.75, crossAxisSpacing: 16, mainAxisSpacing: 16),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 220, childAspectRatio: 0.68, crossAxisSpacing: 16, mainAxisSpacing: 20),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final med = filteredMedicines[index];
@@ -1375,7 +1423,11 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 return GestureDetector(
                   onTap: () => _showProductDetails(med, heroTag: 'med_image_all_${med['id']}'), 
                   child: Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[200]!)),
+                    decoration: BoxDecoration(
+                      color: Colors.white, 
+                      borderRadius: BorderRadius.circular(24), 
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 10))],
+                    ),
                     child: Stack(
                       children: [
                         Padding(
@@ -1383,19 +1435,49 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start, 
                             children: [
-                              Expanded(flex: 3, child: Center(child: Hero(tag: 'med_image_all_${med['id']}', child: imageUrl != null ? Image.network(imageUrl, fit: BoxFit.contain) : const Icon(Icons.medication, color: Colors.grey, size: 60)))),
-                              const SizedBox(height: 12), Text(med['name'].toString(), style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14), maxLines: 2),
-                              const SizedBox(height: 8), 
+                              Expanded(
+                                flex: 4, 
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16)),
+                                  child: Center(child: Hero(tag: 'med_image_all_${med['id']}', child: imageUrl != null ? Image.network(imageUrl, fit: BoxFit.contain) : const Icon(Icons.medication, color: Colors.grey, size: 50)))
+                                )
+                              ),
+                              const SizedBox(height: 16), 
+                              Text(med['name'].toString(), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Colors.black87), maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const Spacer(), 
                               if (med['is_on_offer'] == true) 
-                                Text('KES ${(double.parse(med['price'].toString()) * (1 + (med['discount_percentage'] / 100))).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, decoration: TextDecoration.lineThrough, color: Colors.grey)),
-                              Text('KES ${med['price']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                Text('KES ${(double.parse(med['price'].toString()) * (1 + (med['discount_percentage'] / 100))).toStringAsFixed(2)}', style: TextStyle(fontSize: 12, decoration: TextDecoration.lineThrough, color: Colors.grey.shade400, fontWeight: FontWeight.w600)),
+                              Text('KES ${med['price']}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF003876), letterSpacing: -0.5)),
+                              const SizedBox(height: 4), 
                             ]
                           )
                         ),
-                        Positioned(top: 8, right: 8, child: GestureDetector(onTap: () => _toggleWishlist(med), child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)), child: Icon(wishlist.any((item) => item['id'] == med['id']) ? Icons.favorite : Icons.favorite_border, color: const Color(0xFFE91E63), size: 20)))),
-                        if (med['is_on_offer'] == true && med['discount_percentage'] != null && med['discount_percentage'] > 0)
-                          Positioned(top: 0, left: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: const BoxDecoration(color: Colors.red, borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12))), child: Text('${med['discount_percentage']}% OFF', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))),
-                        Positioned(bottom: 12, right: 12, child: GestureDetector(onTap: () => _addToCart(med, isPos: false), child: Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF003876)), padding: const EdgeInsets.all(8.0), child: const Icon(Icons.add, color: Colors.white, size: 24)))),
+                        Positioned(
+                          top: 12, right: 12, 
+                          child: GestureDetector(
+                            onTap: () => _toggleWishlist(med), 
+                            child: Container(
+                              padding: const EdgeInsets.all(8), 
+                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]), 
+                              child: Icon(wishlist.any((item) => item['id'] == med['id']) ? Icons.favorite : Icons.favorite_border, color: const Color(0xFFE91E63), size: 18)
+                            )
+                          )
+                        ),
+                        Positioned(
+                          bottom: 0, right: 0, 
+                          child: GestureDetector(
+                            onTap: () => _addToCart(med, isPos: false), 
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                borderRadius: BorderRadius.only(topLeft: Radius.circular(24), bottomRight: Radius.circular(24)), 
+                                color: Color(0xFF65B741)
+                              ), 
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+                              child: const Icon(Icons.add, color: Colors.white, size: 22)
+                            )
+                          )
+                        ),
                       ],
                     ),
                   ),
@@ -1435,10 +1517,9 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     double subTotal = 0;
     for (var item in cart) { subTotal += double.parse(item['price'].toString()) * item['cart_quantity']; }
 
-    // --- SMART DELIVERY CALCULATION ---
-    double distanceKm = 4.5; // In production, grab this from a Map/Location Controller
-    double averageSpeedKmh = 10.0; // Bike courier speed
-    double pricePerKm = 30.0; // Base rate per KM
+    double distanceKm = 4.5; 
+    double averageSpeedKmh = 10.0; 
+    double pricePerKm = 30.0; 
     
     double deliveryFee = distanceKm * pricePerKm;
     int estimatedTimeMins = ((distanceKm / averageSpeedKmh) * 60).round();
@@ -1481,16 +1562,13 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  
   Widget _buildDashboardBody() {
     double totalRevenue = 0; 
     double pendingRevenue = 0; 
     int deliveredCount = 0;
 
-    // Filter items running out of stock
     List<dynamic> lowStockItems = medicines.where((med) => (med['stock_quantity'] ?? 0) < 10).toList();
 
-    // Calculate revenue totals
     for (var order in orders) { 
       double price = double.parse(order['total_price'].toString()); 
       totalRevenue += price; 
@@ -1503,7 +1581,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       }
     }
 
-    // Sort orders into their respective pipeline stages (Reverse so newest are at the top)
     final newOrders = orders.where((o) => o['status'] == 'Processed').toList().reversed.toList();
     final dispatchedOrders = orders.where((o) => o['status'] == 'Dispatched').toList().reversed.toList();
     final completedOrders = orders.where((o) => o['status'] == 'Delivered').toList().reversed.toList();
@@ -1512,7 +1589,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       length: 3,
       child: Column(
         children: [
-          // --- 1. HEADER & EXPORT ---
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -1521,7 +1597,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 const Text('Vendor Dashboard', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
                 Row(
                   children: [
-                    // ⚠️ THE MAGIC CHECK: Only show this button if they have access!
                     if (hasPosAccess == true) 
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.green, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
@@ -1529,7 +1604,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                         icon: const Icon(Icons.point_of_sale, color: Colors.white, size: 18),
                         label: const Text('Open POS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
-                    if (hasPosAccess == true) const SizedBox(width: 8), // Spacing
+                    if (hasPosAccess == true) const SizedBox(width: 8), 
                     
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003876), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
@@ -1543,7 +1618,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             ),
           ),
 
-          // --- 2. LOW STOCK WARNING ---
           if (lowStockItems.isNotEmpty)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1598,7 +1672,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
               ),
             ),
 
-          // --- 3. COMPACT REVENUE CARDS ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), 
             child: Row(
@@ -1638,7 +1711,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             )
           ),
 
-          // --- 4. THE PIPELINE TABS ---
           const SizedBox(height: 16),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1659,7 +1731,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           ),
           const SizedBox(height: 16),
 
-          // --- 5. TAB VIEWS ---
           Expanded(
             child: TabBarView(
               children: [
@@ -1674,7 +1745,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // Helper widget to build the individual lists inside the tabs
   Widget _buildOrderListView(List<dynamic> tabOrders, IconData icon, Color badgeColor, String subtitleText) {
     if (tabOrders.isEmpty) {
       return Center(
@@ -1718,7 +1788,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                 icon: const Icon(Icons.print, color: Color(0xFF003876)), 
                 tooltip: 'Print Dispatch Receipt', 
                 onPressed: () {
-                  // Prevent the ListTile onTap from firing when pressing the print button
                   _printReceipt(order);
                 }
               )
@@ -1839,11 +1908,9 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = false);
       
       if (response.statusCode == 200) {
-        // ⚠️ NEW: Decode the response and grab the pos status!
         final data = json.decode(response.body);
         bool posAccess = data['has_pos_access'] ?? false;
         
-        // Pass BOTH the login success and the POS status back to the main screen
         Navigator.pop(context, {'loggedIn': true, 'posAccess': posAccess}); 
         
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vendor Access Granted!'), backgroundColor: Colors.green));
@@ -1933,7 +2000,7 @@ class RegistrationScreen extends StatefulWidget {
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController(); // NEW: Email Controller
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _ppbLicenseController = TextEditingController();
@@ -1952,7 +2019,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'pharmacy_name': _nameController.text,
-          'email': _emailController.text, // NEW: Sending email to Django
+          'email': _emailController.text,
           'phone_number': _phoneController.text,
           'national_id': _idController.text,
           'ppb_license': _ppbLicenseController.text,
@@ -2022,7 +2089,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   
                   _buildTextField(label: 'Pharmacy Name', controller: _nameController, icon: Icons.local_pharmacy),
                   const SizedBox(height: 16),
-                  _buildTextField(label: 'Email Address', controller: _emailController, icon: Icons.email, keyboardType: TextInputType.emailAddress), // NEW: Email Input
+                  _buildTextField(label: 'Email Address', controller: _emailController, icon: Icons.email, keyboardType: TextInputType.emailAddress),
                   const SizedBox(height: 16),
                   _buildTextField(label: 'Phone Number', controller: _phoneController, icon: Icons.phone, keyboardType: TextInputType.phone),
                   const SizedBox(height: 16),
@@ -2181,7 +2248,6 @@ class _PrescriptionUploadScreenState extends State<PrescriptionUploadScreen> {
                   const Text('2. Attach Doctor\'s Note', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF003876))),
                   const SizedBox(height: 16),
                   
-                  // Image Picker Box
                   GestureDetector(
                     onTap: _pickImage,
                     child: Container(
@@ -2248,7 +2314,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
   }
 
   Future<void> _runSimulation() async {
-    // Step 1: Connecting
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) {
       setState(() {
@@ -2257,7 +2322,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
     });
     }
 
-    // Step 2: Waiting for User PIN
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) {
       setState(() {
@@ -2266,7 +2330,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
     });
     }
 
-    // Step 3: Payment Confirmed!
     await Future.delayed(const Duration(milliseconds: 3500));
     if (mounted) {
       setState(() {
@@ -2276,7 +2339,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
     });
     }
 
-    // Step 4: Close the dialog and trigger the Django API
     await Future.delayed(const Duration(milliseconds: 1500));
     if (mounted) {
       Navigator.pop(context); 
@@ -2296,7 +2358,6 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Bouncing/Changing M-Pesa Icon
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),
               transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
@@ -2311,11 +2372,9 @@ class _MpesaSimulationDialogState extends State<MpesaSimulationDialog> {
             const Text('M-PESA Express', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF4CAF50))),
             const SizedBox(height: 24),
             
-            // Loading Spinner (Hides when done)
             if (isProcessing) const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50))),
             if (isProcessing) const SizedBox(height: 24),
             
-            // Dynamic Status Text
             Text(statusMessage, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
           ],
         ),
