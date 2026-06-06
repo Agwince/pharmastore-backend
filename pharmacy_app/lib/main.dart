@@ -149,11 +149,12 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
   }
 
   // NEW: Function to grab real GPS coordinates and turn them into a city/neighborhood name
+  // UPGRADED: Function to grab real GPS coordinates with a timeout and graceful fallbacks
   Future<void> _fetchRealLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() => _userLocation = 'Location disabled');
+        setState(() => _userLocation = 'Nairobi (Default)');
         return;
       }
 
@@ -161,25 +162,30 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          setState(() => _userLocation = 'Permission denied');
+          setState(() => _userLocation = 'Nairobi (Default)');
           return;
         }
       }
 
-      Position position = await Geolocator.getCurrentPosition();
+      // CRITICAL FIX: Added a 5-second timeout so the app NEVER freezes
+      Position position = await Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 5), 
+      );
+      
       List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
       
       if (placemarks.isNotEmpty) {
         setState(() {
-          // This tries to get the local neighborhood first, falling back to city, then a default.
-          _userLocation = placemarks.first.subLocality ?? placemarks.first.locality ?? "Unknown Area";
+          // Grabs the local neighborhood first, falling back to city, then Nairobi.
+          _userLocation = placemarks.first.subLocality ?? placemarks.first.locality ?? "Nairobi";
         });
       }
     } catch (e) {
-      setState(() => _userLocation = 'Location unavailable');
+      // If the GPS fails or times out, it fails gracefully without an ugly error
+      setState(() => _userLocation = 'Nairobi (Default)');
     }
   }
-
+  
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good Morning ☀️';
