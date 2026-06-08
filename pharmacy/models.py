@@ -92,6 +92,12 @@ class VendorProfile(models.Model):
     # ==========================================
     has_pos_access = models.BooleanField(default=False, help_text="Can this vendor use the POS system?")
     
+    # ==========================================
+    # ⚠️ NEW: OTP Verification Fields
+    # ==========================================
+    is_email_verified = models.BooleanField(default=False)
+    otp_code = models.CharField(max_length=6, blank=True, null=True)
+
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -223,24 +223,23 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     if (!isPos) _showTopSnackbar('$qty x ${med['name']} added to cart!'); 
   }
 
-  // FIXED: Profile Picture Upload Logic
   Future<void> _uploadProfilePicture() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
     if (image != null) {
       _showTopSnackbar('Uploading picture...', color: Colors.orange);
-      // Here you would normally send 'image.path' or bytes to your Django backend via http.MultipartRequest.
-      // For now, we update the UI instantly to show it works for the demo:
-      setState(() {
-        userProfilePic = image.path; // Update local state
-      });
+      setState(() { userProfilePic = image.path; });
       _showTopSnackbar('Profile picture updated successfully!', color: Colors.green);
     }
   }
 
-  // FIXED: Real Interactive Notifications Panel
+  // FIXED: Only logged-in users can see system notifications
   void _showNotificationsPanel() {
+    if (!isLoggedIn) {
+      _showTopSnackbar('Please log in to view system notifications.', color: Colors.orange);
+      return;
+    }
+
     List<dynamic> lowStockItems = medicines.where((med) => (med['stock_quantity'] ?? 0) < 10).toList();
     List<dynamic> pendingOrders = orders.where((o) => o['status'] == 'Processed').toList();
 
@@ -606,6 +605,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
+  // FIXED: "How are you feeling today?" + Dynamic Name + Profile Upload + Notification Lock
   PreferredSizeWidget _buildMobileAppBar() {
     return AppBar(
       toolbarHeight: 90,
@@ -627,7 +627,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     }
                   });
                 } else { 
-                  // If logged in, let them upload a profile picture!
                   _uploadProfilePicture(); 
                 }
               },
@@ -653,19 +652,19 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   const Text('Hello, ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)), 
                   Text(userName.isNotEmpty ? userName : 'Guest!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2C8C7C)))
                 ]),
-                const Text('How are you feel today?', style: TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500)),
+                const Text('How are you feeling today?', style: TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500)),
               ],
             ),
             const Spacer(),
             GestureDetector(
-              onTap: _showNotificationsPanel, // FIXED: Triggers the real panel
+              onTap: _showNotificationsPanel, 
               child: Container(
                 padding: const EdgeInsets.all(10), decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), 
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.notifications_outlined, color: Color(0xFF2C8C7C)),
-                    if (medicines.where((m) => (m['stock_quantity'] ?? 0) < 10).isNotEmpty || orders.where((o) => o['status'] == 'Processed').isNotEmpty)
+                    if (isLoggedIn && (medicines.where((m) => (m['stock_quantity'] ?? 0) < 10).isNotEmpty || orders.where((o) => o['status'] == 'Processed').isNotEmpty))
                       Positioned(top: 0, right: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)))
                   ],
                 )
@@ -761,6 +760,30 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                     },
                   ),
                 ),
+                if (isDesktop) 
+                  Positioned(
+                    bottom: -40, 
+                    child: Container(
+                      width: 600, padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))]),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text("What Are You Looking For?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              TextButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PrescriptionUploadScreen())), icon: const Icon(Icons.receipt_long, color: Color(0xFF2C8C7C)), label: const Text("Order With Prescription", style: TextStyle(color: Color(0xFF2C8C7C))))
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _searchController, onChanged: _filterSearch, onSubmitted: (value) => _filterSearch(value), 
+                            decoration: InputDecoration(hintText: 'Search for Medication & Products.', filled: true, fillColor: Colors.grey[100], suffixIcon: Container(margin: const EdgeInsets.all(4), decoration: BoxDecoration(color: const Color(0xFF2C8C7C), borderRadius: BorderRadius.circular(30)), child: IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () { _filterSearch(_searchController.text); FocusScope.of(context).unfocus(); })), border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -830,7 +853,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             ),
           ),
           
-          // ADDED: Special Offers Section
           if (offerMedicines.isNotEmpty) ...[
             const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('Special Offers', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFE54A4A))))),
             SliverToBoxAdapter(
@@ -874,7 +896,7 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
           
           const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(24.0, 32.0, 24.0, 16.0), child: Text('All Medical Products', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E2826))))),
         ] else ...[
-          // FIXED: Search Results View (With a clear back button inside the search field)
+          // FIXED: Back button integrated into search bar
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
@@ -885,7 +907,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
                   decoration: InputDecoration(
                     hintText: 'Search for Medicine and more...', 
                     prefixIcon: const Icon(Icons.search, color: Colors.grey), 
-                    // ADDED CLEAR BUTTON HERE
                     suffixIcon: IconButton(icon: const Icon(Icons.close, color: Colors.grey), onPressed: () { _searchController.clear(); _filterSearch(''); FocusScope.of(context).unfocus(); }),
                     border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(vertical: 16)
                   ),
@@ -933,6 +954,22 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
             ),
           ),
         ),
+        
+        if (isDesktop)
+          SliverToBoxAdapter(
+            child: Container(
+              color: const Color(0xFF1E2826), padding: const EdgeInsets.all(40), 
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceAround, 
+                children: [
+                  const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Customer Service', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 16), Text('Service and Warranty', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Returns and Exchanges', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Secured Online Payment', style: TextStyle(color: Colors.white70))]), 
+                  const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('About PharmaStore', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 16), Text('About Us', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Pharmacy Locations', style: TextStyle(color: Colors.white70)), SizedBox(height: 8), Text('Health & Safety Policies', style: TextStyle(color: Colors.white70))]), 
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Need Help?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 16), Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), decoration: BoxDecoration(color: const Color(0xFF2C8C7C), borderRadius: BorderRadius.circular(8)), child: const Row(children: [Icon(Icons.phone, color: Colors.white), SizedBox(width: 8), Text('0800 221 322', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))]))])
+                ]
+              )
+            )
+          ),
+        if (isDesktop) SliverToBoxAdapter(child: Container(color: Colors.black87, padding: const EdgeInsets.all(16), child: const Center(child: Text('© 2026 PharmaStore Kenya. All rights reserved.', style: TextStyle(color: Colors.white54)))))
       ],
     );
   }
@@ -951,7 +988,6 @@ class _StorefrontScreenState extends State<StorefrontScreen> {
     );
   }
 
-  // FIXED: Real Tracking Logic
   Widget _buildTrackingBody() {
     return Column(
       children: [
@@ -1189,10 +1225,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body); 
         bool posAccess = data['has_pos_access'] ?? false;
-        
         String fetchedName = data['name'] ?? 'Vendor'; 
         String fetchedPic = data['profile_pic'] ?? '';
-
         Navigator.pop(context, {'loggedIn': true, 'posAccess': posAccess, 'name': fetchedName, 'pic': fetchedPic}); 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vendor Access Granted!'), backgroundColor: Colors.green));
       } else { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials or account not verified.'), backgroundColor: Colors.red)); }
@@ -1228,7 +1262,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // ==========================================
-// 3. THE REGISTRATION SCREEN
+// 3. THE REGISTRATION SCREEN (WITH OTP)
 // ==========================================
 class RegistrationScreen extends StatefulWidget { const RegistrationScreen({super.key}); @override State<RegistrationScreen> createState() => _RegistrationScreenState(); }
 class _RegistrationScreenState extends State<RegistrationScreen> {
@@ -1236,13 +1270,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _nameController = TextEditingController(); final TextEditingController _emailController = TextEditingController(); final TextEditingController _phoneController = TextEditingController(); final TextEditingController _idController = TextEditingController(); final TextEditingController _ppbLicenseController = TextEditingController(); final TextEditingController _countyLicenseController = TextEditingController(); final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  // FIXED: Launch OTP verification after successful registration
   Future<void> _submitRegistration() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
       final response = await http.post(Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/register'), headers: {'Content-Type': 'application/json'}, body: json.encode({'pharmacy_name': _nameController.text, 'email': _emailController.text, 'phone_number': _phoneController.text, 'national_id': _idController.text, 'ppb_license': _ppbLicenseController.text, 'county_license': _countyLicenseController.text, 'password': _passwordController.text}));
       setState(() => _isLoading = false);
-      if (response.statusCode == 201) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration Pending! We will email you once verified.'), backgroundColor: Colors.green)); Navigator.pop(context); } else { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed. Check details.'), backgroundColor: Colors.red)); }
+      if (response.statusCode == 201) { 
+        // Show the OTP Verification Dialog immediately
+        showDialog(context: context, barrierDismissible: false, builder: (context) => OTPVerificationDialog(email: _emailController.text));
+      } else { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration failed. Check details.'), backgroundColor: Colors.red)); }
     } catch (e) { setState(() => _isLoading = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Server Error. Cannot connect to backend.'), backgroundColor: Colors.red)); }
   }
 
@@ -1264,7 +1302,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.store, size: 60, color: Color(0xFF2C8C7C)), const SizedBox(height: 16), const Text('Vendor Registration', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2C8C7C))), const SizedBox(height: 8), const Text('We will email you once your licenses are verified.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)), const SizedBox(height: 32),
+                  const Icon(Icons.store, size: 60, color: Color(0xFF2C8C7C)), const SizedBox(height: 16), const Text('Vendor Registration', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2C8C7C))), const SizedBox(height: 8), const Text('We will email you a secure OTP for verification.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)), const SizedBox(height: 32),
                   _buildTextField(label: 'Pharmacy Name', controller: _nameController, icon: Icons.local_pharmacy), const SizedBox(height: 16), _buildTextField(label: 'Email Address', controller: _emailController, icon: Icons.email, keyboardType: TextInputType.emailAddress), const SizedBox(height: 16), _buildTextField(label: 'Phone Number', controller: _phoneController, icon: Icons.phone, keyboardType: TextInputType.phone), const SizedBox(height: 16), _buildTextField(label: 'National ID', controller: _idController, icon: Icons.badge), const SizedBox(height: 16), _buildTextField(label: 'PPB License Number', controller: _ppbLicenseController, icon: Icons.medical_information), const SizedBox(height: 16), _buildTextField(label: 'County License Number', controller: _countyLicenseController, icon: Icons.account_balance), const SizedBox(height: 16), _buildTextField(label: 'Password', controller: _passwordController, icon: Icons.lock, isPassword: true), const SizedBox(height: 32),
                   SizedBox(width: double.infinity, height: 50, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2C8C7C), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))), onPressed: _isLoading ? null : _submitRegistration, child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Submit Application', style: TextStyle(color: Colors.white, fontSize: 16))))
                 ],
@@ -1276,6 +1314,56 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 }
+
+// ==========================================
+// NEW: OTP VERIFICATION DIALOG
+// ==========================================
+class OTPVerificationDialog extends StatefulWidget {
+  final String email;
+  const OTPVerificationDialog({super.key, required this.email});
+  @override State<OTPVerificationDialog> createState() => _OTPVerificationDialogState();
+}
+class _OTPVerificationDialogState extends State<OTPVerificationDialog> {
+  final TextEditingController _otpController = TextEditingController();
+  bool _isVerifying = false;
+
+  Future<void> _verifyOTP() async {
+    setState(() => _isVerifying = true);
+    try {
+      final response = await http.post(
+        Uri.parse('https://pharmastore-backend-jmcl.onrender.com/api/verify-otp/'), // Make sure this matches your Django URL!
+        body: {'email': widget.email, 'otp': _otpController.text}
+      );
+      setState(() => _isVerifying = false);
+      if (response.statusCode == 200) {
+        Navigator.pop(context); // Close dialog
+        Navigator.pop(context); // Go back to login
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email Verified Successfully! You can now log in.'), backgroundColor: Colors.green));
+      } else { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid OTP code.'), backgroundColor: Colors.red)); }
+    } catch (e) { setState(() => _isVerifying = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connection error.'), backgroundColor: Colors.red)); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Column(children: [Icon(Icons.mark_email_read, color: Color(0xFF2C8C7C), size: 40), SizedBox(height: 16), Text('Verify Your Email', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E2826)))]),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('We just sent a 6-digit code to ${widget.email}. Please enter it below to activate your account.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 24),
+          TextField(controller: _otpController, keyboardType: TextInputType.number, textAlign: TextAlign.center, maxLength: 6, decoration: InputDecoration(hintText: '------', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)))),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.grey))),
+        ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2C8C7C)), onPressed: _isVerifying ? null : _verifyOTP, child: _isVerifying ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Verify', style: TextStyle(color: Colors.white)))
+      ],
+    );
+  }
+}
+
 
 // ==========================================
 // 4. PRESCRIPTION UPLOAD SCREEN

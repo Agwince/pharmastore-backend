@@ -7,7 +7,9 @@ from .views import (
     VendorRegistrationViewSet, 
     CheckoutViewSet,
     PromoBannerViewSet,
-    upload_prescription # ⚠️ NEW: Imported the Prescription Upload View
+    upload_prescription,
+    vendor_login,  # ⚠️ NEW: Imported the login view
+    verify_otp     # ⚠️ NEW: Imported the OTP verification view
 )
 
 router = DefaultRouter(trailing_slash=False)
@@ -22,7 +24,13 @@ urlpatterns = [
     path('', include(router.urls)),
     
     # ==========================================
-    # ⚠️ NEW: The endpoint where Flutter sends photos!
+    # Prescription Upload Endpoint
     # ==========================================
     path('prescriptions/upload', upload_prescription, name='upload_prescription'),
+    
+    # ==========================================
+    # ⚠️ NEW: Authentication & OTP Endpoints
+    # ==========================================
+    path('login/', vendor_login, name='vendor-login'),
+    path('verify-otp/', verify_otp, name='verify-otp'),
 ]
