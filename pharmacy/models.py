@@ -4,8 +4,24 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 class Medicine(models.Model):
+    # ==========================================
+    # ⚠️ NEW: Category Choices Dropdown
+    # ==========================================
+    CATEGORY_CHOICES = [
+        ('First Aid', 'First Aid'),
+        ('Medicines', 'Medicines'),
+        ('Injections', 'Injections'),
+        ('Baby Care', 'Baby Care'),
+        ('Pain Relief', 'Pain Relief'),
+        ('Vitamins', 'Vitamins'),
+        ('Supplements', 'Supplements'),
+        ('Personal Care', 'Personal Care'),
+        ('Devices', 'Devices'),
+        ('General', 'General'),
+    ]
+
     name = models.CharField(max_length=200)
-    category = models.CharField(max_length=100, default="General")
+    category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, default="General")
     image = models.ImageField(upload_to='medicines/images/', null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock_quantity = models.IntegerField()
